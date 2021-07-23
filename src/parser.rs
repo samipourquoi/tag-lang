@@ -21,17 +21,17 @@ use nom::character::complete::not_line_ending;
 
 #[derive(Debug)]
 pub struct AST {
-    statements: Vec<Statement>
+    pub statements: Vec<Statement>
 }
 
 #[derive(Debug)]
-enum Statement {
+pub enum Statement {
     Command(Command)
 }
 
 #[derive(Debug, PartialEq)]
-struct Command {
-    value: String
+pub struct Command {
+    pub value: String
 }
 
 type ParseResult<'a, T> = IResult<&'a str, T>;
