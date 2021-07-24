@@ -1,27 +1,41 @@
-use nom::{
-    bytes::complete::take_until,
-    IResult,
-    multi::many0,
-    combinator::opt,
-    bytes::complete::tag,
-    character::{
-        complete::{
-            anychar,
-            multispace0
-        },
-        complete::line_ending as eol
-    },
-    branch::alt,
-    sequence::{terminated, delimited},
-    combinator::eof,
-    multi::many1,
-    character::complete::{alphanumeric1, alphanumeric0}
-};
+use nom::sequence::delimited;
+use nom::sequence::terminated;
+use nom::branch::alt;
+use nom::character::complete::line_ending as eol;
+use nom::character::complete::digit1;
+use nom::character::complete::multispace0;
+use nom::character::complete::anychar;
+use nom::bytes::complete::take_until;
+use nom::{IResult, InputTake, UnspecializedInput};
+use nom::multi::many0;
+use nom::combinator::eof;
+use nom::combinator::opt;
+use nom::bytes::complete::tag;
+use nom::sequence::separated_pair;
+use nom::multi::many1;
+use nom::character::complete::alphanumeric1;
+use nom::character::complete::alphanumeric0;
+use nom::Parser;
 use nom::character::complete::not_line_ending;
+use nom::combinator::map;
+use nom::InputLength;
+use nom::InputIter;
+use nom::sequence::preceded;
+use nom::error::ParseError;
 
 #[derive(Debug)]
 pub struct AST {
     pub statements: Vec<Statement>
+}
+
+type ParseResult<'a, T> = IResult<&'a str, T>;
+
+pub fn parse(input: &str) -> ParseResult<AST> {
+    let (input, statements) = many0(ws(parse_statement))(input)?;
+
+    Ok((input, AST {
+        statements
+    }))
 }
 
 #[derive(Debug)]
@@ -29,33 +43,72 @@ pub enum Statement {
     Command(Command)
 }
 
-#[derive(Debug, PartialEq)]
+fn parse_statement(input: &str) -> ParseResult<Statement> {
+    // alt((
+    //     map(parse_command, |cmd| Statement::Command(cmd)),
+    // ))(input)
+    map(parse_command, |cmd| Statement::Command(cmd))(input)
+}
+
+#[derive(Debug)]
 pub struct Command {
     pub value: String
 }
 
-type ParseResult<'a, T> = IResult<&'a str, T>;
-
-pub fn parse(input: &str) -> ParseResult<AST> {
-    let (input, statements) = many0(
-        delimited(multispace0, parse_statement, multispace0)
-    )(input)?;
-
-    Ok((input, AST {
-        statements
-    }))
-}
-
-fn parse_statement(input: &str) -> ParseResult<Statement> {
-    let (input, command) = parse_command(input)?;
-    Ok((input, Statement::Command(command)))
-}
-
 fn parse_command(input: &str) -> ParseResult<Command> {
-    let (input, _) = tag("/")(input)?;
-    let (input, command) = read_line(input)?;
+    map(preceded(tag("/"), read_line),
+        |cmd| Command { value: cmd })(input)
+}
 
-    Ok((input, Command { value: command.to_string() }))
+#[derive(Debug)]
+enum Expression {
+    Sum(Summand, Box<Expression>),
+    Summand(Summand)
+}
+
+fn parse_expression(input: &str) -> ParseResult<Expression> {
+    alt((
+        map(separated_pair(parse_summand, ws(tag("+")), parse_expression),
+            |(summand, expression)| Expression::Sum(summand, Box::new(expression))),
+
+        map(parse_summand, |summand| Expression::Summand(summand))
+    ))(input)
+}
+
+#[derive(Debug)]
+enum Summand {
+    Multiplication(Term, Box<Summand>),
+    Term(Term)
+}
+
+fn parse_summand(input: &str) -> ParseResult<Summand> {
+    alt((
+        |input| {
+            let (input, term) = parse_term(input)?;
+            let (input, _) = ws(tag("*"))(input)?;
+            let (input, summand) = parse_summand(input)?;
+
+            Ok((input, Summand::Multiplication(term, Box::new(summand))))
+        },
+        map(parse_term, |term| Summand::Term(term))
+    ))(input)
+}
+
+#[derive(Debug)]
+enum Term {
+    Number(i32),
+    Expression(Box<Expression>)
+}
+
+fn parse_term(input: &str) -> ParseResult<Term> {
+    alt((
+        map(digit1,
+            |d: &str| Term::Number(d.to_string().parse().unwrap())),
+
+        delimited(ws(tag("(")),
+                  map(parse_expression, |expr| Term::Expression(Box::new(expr))),
+                  ws(tag(")")))
+    ))(input)
 }
 
 fn read_line(input: &str) -> ParseResult<String> {
@@ -69,4 +122,15 @@ fn end_of_line(input: &str) -> ParseResult<&str> {
     } else {
         eol(input)
     }
+}
+
+fn ws<'a, F: 'a, O, E: ParseError<&'a str>>(inner: F) -> impl FnMut(&'a str) -> IResult<&'a str, O, E>
+    where
+        F: Fn(&'a str) -> IResult<&'a str, O, E>,
+{
+    delimited(
+        multispace0,
+        inner,
+        multispace0
+    )
 }

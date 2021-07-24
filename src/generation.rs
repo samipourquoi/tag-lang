@@ -38,7 +38,8 @@ pub fn generate(ast: AST) {
         match statement {
             Statement::Command(cmd) => {
                 ctx.generate_command(cmd);
-            }
+            },
+            _ => ()
         }
     }
 

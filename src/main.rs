@@ -8,5 +8,6 @@ fn main() {
     let result = parser::parse(r#"
         /say hello world
     "#).unwrap();
-    generation::generate(result.1);
+    // generation::generate(result.1);
+    dbg!(result);
 }
