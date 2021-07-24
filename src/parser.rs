@@ -1,4 +1,4 @@
-use nom::sequence::delimited;
+use nom::sequence::{delimited, delimitedc};
 use nom::sequence::terminated;
 use nom::branch::alt;
 use nom::character::complete::line_ending as eol;
@@ -38,16 +38,38 @@ pub fn parse(input: &str) -> ParseResult<AST> {
     }))
 }
 
+fn parse_block(input: &str) -> ParseResult<Vec<Statement>> {
+    delimited(
+        ws(tag("{")),
+        many0(ws(parse_statement)),
+        ws(tag("}"))
+    )(input)
+}
+
 #[derive(Debug)]
 pub enum Statement {
-    Command(Command)
+    Command(Command),
+    IfStatement(IfStatement)
 }
 
 fn parse_statement(input: &str) -> ParseResult<Statement> {
-    // alt((
-    //     map(parse_command, |cmd| Statement::Command(cmd)),
-    // ))(input)
-    map(parse_command, |cmd| Statement::Command(cmd))(input)
+    alt((
+        map(parse_command, |cmd| Statement::Command(cmd)),
+        map(parse_if_statement, |if_stmt| Statement::IfStatement(if_stmt))
+    ))(input)
+}
+
+#[derive(Debug)]
+pub struct IfStatement {
+    pub expr: Expression,
+    pub block: Vec<Statement>
+}
+
+fn parse_if_statement(input: &str) -> ParseResult<IfStatement> {
+    let (input, expr) = preceded(tag("if "), ws(parse_expression))(input)?;
+    let (input, block) = parse_block(input)?;
+
+    Ok((input, IfStatement { expr, block }))
 }
 
 #[derive(Debug)]
@@ -61,9 +83,10 @@ fn parse_command(input: &str) -> ParseResult<Command> {
 }
 
 #[derive(Debug)]
-enum Expression {
+pub enum Expression {
     Sum(Summand, Box<Expression>),
-    Summand(Summand)
+    Summand(Summand),
+    Boolean(bool)
 }
 
 fn parse_expression(input: &str) -> ParseResult<Expression> {
@@ -71,12 +94,15 @@ fn parse_expression(input: &str) -> ParseResult<Expression> {
         map(separated_pair(parse_summand, ws(tag("+")), parse_expression),
             |(summand, expression)| Expression::Sum(summand, Box::new(expression))),
 
-        map(parse_summand, |summand| Expression::Summand(summand))
+        map(parse_summand, |summand| Expression::Summand(summand)),
+
+        map(tag("true"), |_| Expression::Boolean(true)),
+        map(tag("false"), |_| Expression::Boolean(false))
     ))(input)
 }
 
 #[derive(Debug)]
-enum Summand {
+pub enum Summand {
     Multiplication(Term, Box<Summand>),
     Term(Term)
 }
@@ -95,7 +121,7 @@ fn parse_summand(input: &str) -> ParseResult<Summand> {
 }
 
 #[derive(Debug)]
-enum Term {
+pub enum Term {
     Number(i32),
     Expression(Box<Expression>)
 }

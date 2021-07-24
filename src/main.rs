@@ -6,8 +6,13 @@ mod generation;
 
 fn main() {
     let result = parser::parse(r#"
-        /say hello world
+        if true {
+            if false {
+                /say it's false!
+            }
+            /say hello world
+        }
     "#).unwrap();
-    // generation::generate(result.1);
-    dbg!(result);
+    dbg!(&result);
+    generation::generate(result.1);
 }
