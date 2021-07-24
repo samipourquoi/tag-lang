@@ -7,10 +7,11 @@ mod generation;
 fn main() {
     let result = parser::parse(r#"
         if true {
-            if false {
-                /say it's false!
-            }
-            /say hello world
+            /say if
+        } else if false {
+            /say if else
+        } else {
+            /say else
         }
     "#).unwrap();
     dbg!(&result);

@@ -62,14 +62,58 @@ fn parse_statement(input: &str) -> ParseResult<Statement> {
 #[derive(Debug)]
 pub struct IfStatement {
     pub expr: Expression,
-    pub block: Vec<Statement>
+    pub block: Vec<Statement>,
+    pub else_block: Option<Vec<Statement>>,
+    pub else_if: Box<Option<IfStatement>>
 }
 
 fn parse_if_statement(input: &str) -> ParseResult<IfStatement> {
     let (input, expr) = preceded(tag("if "), ws(parse_expression))(input)?;
     let (input, block) = parse_block(input)?;
 
-    Ok((input, IfStatement { expr, block }))
+    // This basically transforms this...
+    // > if A {
+    // >   ...
+    // > } else if B {
+    // >   ...
+    // > } else {
+    //
+    // ...into this:
+    // > if A {
+    // >   ...
+    // > } else {
+    // >   if B {
+    // >     ...
+    // >   } else {
+    // >     ...
+    // >   }
+    // > }
+    if let Ok((input, else_if))
+    = preceded(ws(tag("else ")), parse_if_statement)(input)
+    {
+        Ok((input, IfStatement {
+            expr,
+            block,
+            else_if: Box::new(Some(else_if)),
+            else_block: None
+        }))
+    } else if let Ok((input, else_block))
+        = preceded(ws(tag("else")), parse_block)(input)
+    {
+        Ok((input, IfStatement {
+            expr,
+            block,
+            else_if: Box::new(None),
+            else_block: Some(else_block)
+        }))
+    } else {
+        Ok((input, IfStatement {
+            expr,
+            block,
+            else_if: Box::new(None),
+            else_block: None
+        }))
+    }
 }
 
 #[derive(Debug)]
