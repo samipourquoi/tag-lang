@@ -4,8 +4,13 @@ mod generator;
 fn main() {
     let result = parser::parse(r#"
       $hello := true;
+      $world := false;
 
-      /execute if data storage vars[-1].hello run say hello world
+      if $hello {
+        if $world {
+          /say yes!!!
+        }
+      }
     "#).unwrap();
     dbg!(&result);
     generator::generate(result.1);

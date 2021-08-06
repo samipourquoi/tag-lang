@@ -23,7 +23,8 @@ impl Generator {
             scopes: vec![]
         };
         ctx.push_file();
-        ctx.push_scope();
+        // shouldn't be needed as it is called in features/statement.rs.
+        // ctx.push_scope();
         ctx
     }
 

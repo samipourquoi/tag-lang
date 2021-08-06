@@ -42,4 +42,12 @@ impl Generator {
             _ => panic!("trying to use a dynamic value in a static context")
         };
     }
+
+    pub fn get_variable_nbt_path(&self, var: &VariableName) -> String {
+        let index = -1 - self.scopes.iter()
+            .rev()
+            .position(|scope| scope.runtime_variables.contains_key(var))
+            .unwrap() as i32;
+        format!("vars[{}].\"{}\"", index, var.get_name())
+    }
 }
