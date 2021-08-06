@@ -21,7 +21,7 @@ pub(in super) fn parse_typing(input: &str) -> ParseResult<Typing> {
 
 pub(in super) fn parse_declaration_typing(input: &str) -> ParseResult<Typing> {
     alt((
-        preceded(ws(tag(":")), parse_typing),
+        preceded(ws(tag(":")), ws(parse_typing)),
         success(Typing::Unknown)
     ))(input)
 }

@@ -110,9 +110,9 @@ pub(in super) fn parse_command(input: &str) -> ParseResult<Command> {
 pub(in super) fn parse_variable_declaration(input: &str)
     -> ParseResult<VariableAssignment>
 {
-    let (input, var) = terminated(parse_variable, ws(tag(":=")))(input)?;
-    let (input, typing) = parse_declaration_typing(input)?;
-    let (input, value) = parse_expression(input)?;
+    let (input, var) = parse_variable(input)?;
+    let (input, typing) = ws(parse_declaration_typing)(input)?;
+    let (input, value) = preceded(ws(tag(":=")), parse_expression)(input)?;
 
     Ok((input, VariableAssignment {
         var, value, typing
