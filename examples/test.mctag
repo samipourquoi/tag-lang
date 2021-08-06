@@ -31,3 +31,10 @@ if true {
 
 	/say hello world
 }
+
+(true or false) and (hello or false)
+
+
+def $hello {
+  message:=3
+}

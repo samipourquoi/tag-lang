@@ -2,7 +2,7 @@ use crate::generator::Generator;
 use crate::parser::statement::IfStatement;
 
 impl Generator {
-    pub(in crate::generator) fn generate_if_statement(&mut self, if_stmt: IfStatement) {
+    pub fn generate_if_statement(&mut self, if_stmt: IfStatement) {
         self.generate_expression(if_stmt.expr);
 
         let fn_name = self.push_file();

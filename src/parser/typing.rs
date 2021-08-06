@@ -4,10 +4,11 @@ use nom::combinator::{map, opt, map_res, success};
 use nom::bytes::complete::tag;
 use nom::sequence::preceded;
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub enum Typing {
     Integer,
     String,
+    Boolean,
     Unknown
 }
 

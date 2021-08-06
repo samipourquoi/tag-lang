@@ -1,7 +1,7 @@
 use crate::parser::{ParseResult, ws, read_line};
 use nom::branch::alt;
 use nom::combinator::{map, success};
-use crate::parser::expression::{Expression, Variable, parse_expression, parse_variable};
+use crate::parser::expression::{Expression, VariableName, parse_expression, parse_variable};
 use nom::sequence::{preceded, delimited, terminated};
 use nom::bytes::complete::tag;
 use nom::multi::many0;
@@ -10,7 +10,8 @@ use crate::parser::typing::{Typing, parse_declaration_typing};
 #[derive(Debug)]
 pub enum Statement {
     Command(Command),
-    IfStatement(IfStatement)
+    IfStatement(IfStatement),
+    VariableAssignment(VariableAssignment)
 }
 
 #[derive(Debug)]
@@ -26,10 +27,11 @@ pub struct Command {
     pub value: String
 }
 
+#[derive(Debug)]
 pub struct VariableAssignment {
-    var: Variable,
-    value: Expression,
-    typing: Typing
+    pub var: VariableName,
+    pub value: Expression,
+    pub typing: Typing
 }
 
 pub(in super) fn parse_block(input: &str) -> ParseResult<Vec<Statement>> {
@@ -42,8 +44,12 @@ pub(in super) fn parse_block(input: &str) -> ParseResult<Vec<Statement>> {
 
 pub(in super) fn parse_statement(input: &str) -> ParseResult<Statement> {
     alt((
-        map(parse_command, |cmd| Statement::Command(cmd)),
-        map(parse_if_statement, |if_stmt| Statement::IfStatement(if_stmt))
+        map(parse_command,
+            |cmd| Statement::Command(cmd)),
+        map(parse_if_statement,
+            |if_stmt| Statement::IfStatement(if_stmt)),
+        map(terminated(parse_variable_declaration, ws(tag(";"))),
+            |var| Statement::VariableAssignment(var))
     ))(input)
 }
 

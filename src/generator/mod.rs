@@ -1,8 +1,7 @@
-mod condition;
-mod expression;
-mod statement;
-mod command;
-mod function;
+mod features;
+mod scopes;
+mod typing;
+mod simplify;
 
 use super::parser::{AST};
 use std::collections::HashMap;
@@ -11,7 +10,8 @@ use std::collections::HashMap;
 struct Generator {
     file_name_stack: Vec<String>,
     files: HashMap<String, Vec<String>>,
-    file_counter: i32
+    file_counter: i32,
+    scopes: Vec<self::scopes::Scope>
 }
 
 impl Generator {
@@ -19,9 +19,11 @@ impl Generator {
         let mut ctx = Generator {
             file_name_stack: vec![],
             files: HashMap::new(),
-            file_counter: -1
+            file_counter: -1,
+            scopes: vec![]
         };
         ctx.push_file();
+        ctx.push_scope();
         ctx
     }
 
@@ -43,8 +45,6 @@ impl Generator {
     fn pop_file(&mut self) {
         self.file_name_stack.pop();
     }
-
-
 }
 
 pub fn generate(ast: AST) {

@@ -7,28 +7,28 @@ use nom::character::complete::digit1;
 use crate::parser::typing::parse_typing;
 use nom::Parser;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Expression {
     Sum(Summand, Box<Expression>),
     Summand(Summand),
     Boolean(bool),
-    Variable(Variable)
+    Variable(VariableName)
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Summand {
     Multiplication(Term, Box<Summand>),
     Term(Term)
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Term {
     Number(i32),
     Expression(Box<Expression>)
 }
 
-#[derive(Debug)]
-pub enum Variable {
+#[derive(Debug, Hash, Clone, PartialEq, Eq)]
+pub enum VariableName {
     Dynamic(String),
     Static(String)
 }
@@ -71,12 +71,12 @@ pub(in super) fn parse_term(input: &str) -> ParseResult<Term> {
     ))(input)
 }
 
-pub(in super) fn parse_variable(input: &str) -> ParseResult<Variable> {
+pub(in super) fn parse_variable(input: &str) -> ParseResult<VariableName> {
     opt(tag("$"))(input).and_then(|(input, dollar)|
         map(identifier, |name|
             match dollar {
-                Some(_) => Variable::Dynamic(name),
-                None    => Variable::Static(name)
+                Some(_) => VariableName::Dynamic(name),
+                None    => VariableName::Static(name)
             }
         )(input)
     )
