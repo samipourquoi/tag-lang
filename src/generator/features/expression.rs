@@ -7,7 +7,11 @@ impl Generator {
             Expression::Boolean(bl) => {
                 self.write(format!("data modify storage tag:runtime stack append {}", bl));
             },
-            _ => ()
+            _ => todo!()
         }
+    }
+
+    pub fn generate_pop_expression(&mut self) {
+        self.write(format!("data remove storage tag:runtime stack[-1]"));
     }
 }

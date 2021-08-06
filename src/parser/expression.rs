@@ -33,6 +33,15 @@ pub enum VariableName {
     Static(String)
 }
 
+impl VariableName {
+    pub fn get_name(&self) -> &String {
+        match self {
+            VariableName::Dynamic(name) => name,
+            VariableName::Static(name) => name
+        }
+    }
+}
+
 pub(in super) fn parse_expression(input: &str) -> ParseResult<Expression> {
     alt((
         map(separated_pair(parse_summand, ws(tag("+")), parse_expression),

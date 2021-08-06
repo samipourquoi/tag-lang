@@ -24,7 +24,7 @@ impl Generator {
         let scope = self.scopes.pop().expect("can't pop a scope if there is none left.");
     }
 
-    fn assign_variable(&mut self, declaration: &VariableAssignment) {
+    pub fn assign_variable(&mut self, declaration: &VariableAssignment) {
         match declaration.var {
             VariableName::Dynamic(_) => {
                 let scope = self.scopes.last_mut()

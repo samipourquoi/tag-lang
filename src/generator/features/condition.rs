@@ -23,7 +23,6 @@ impl Generator {
             self.write(format!("execute unless data storage tag:runtime stack[-1] run function tag:{}", name));
         }
 
-        self.write(format!("data remove storage tag:runtime stack[-1]"));
+        self.generate_pop_expression();
     }
-
 }

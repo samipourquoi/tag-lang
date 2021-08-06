@@ -1,5 +1,6 @@
 use crate::generator::Generator;
 use crate::parser::expression::{Expression, Term, Summand, VariableName};
+use crate::parser::statement::VariableAssignment;
 
 pub trait IsDynamic {
     fn is_dynamic(&self) -> bool;
@@ -12,10 +13,7 @@ impl IsDynamic for Expression {
             Expression::Sum(summand, expr) => summand.is_dynamic() && expr.is_dynamic(),
             Expression::Summand(summand) => summand.is_dynamic(),
             Expression::Boolean(_) => false,
-            Expression::Variable(var) => match var {
-                VariableName::Dynamic(_) => true,
-                VariableName::Static(_) => false
-            }
+            Expression::Variable(var) => var.is_dynamic()
         }
     }
 }
@@ -34,6 +32,21 @@ impl IsDynamic for Term {
         match self {
             Term::Number(_) => false,
             Term::Expression(expr) => expr.is_dynamic()
+        }
+    }
+}
+
+impl IsDynamic for VariableAssignment {
+    fn is_dynamic(&self) -> bool {
+        self.var.is_dynamic()
+    }
+}
+
+impl IsDynamic for VariableName {
+    fn is_dynamic(&self) -> bool {
+        match self {
+            VariableName::Dynamic(_) => true,
+            VariableName::Static(_) => false
         }
     }
 }
