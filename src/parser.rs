@@ -1,26 +1,10 @@
-use nom::sequence::{delimited, delimitedc};
-use nom::sequence::terminated;
-use nom::branch::alt;
-use nom::character::complete::line_ending as eol;
-use nom::character::complete::digit1;
-use nom::character::complete::multispace0;
-use nom::character::complete::anychar;
-use nom::bytes::complete::take_until;
-use nom::{IResult, InputTake, UnspecializedInput};
+use nom::IResult;
 use nom::multi::many0;
-use nom::combinator::eof;
-use nom::combinator::opt;
+use nom::sequence::{delimited, preceded, separated_pair, terminated};
 use nom::bytes::complete::tag;
-use nom::sequence::separated_pair;
-use nom::multi::many1;
-use nom::character::complete::alphanumeric1;
-use nom::character::complete::alphanumeric0;
-use nom::Parser;
-use nom::character::complete::not_line_ending;
+use nom::branch::alt;
 use nom::combinator::map;
-use nom::InputLength;
-use nom::InputIter;
-use nom::sequence::preceded;
+use nom::character::complete::{digit1, not_line_ending, line_ending as eol, multispace0};
 use nom::error::ParseError;
 
 #[derive(Debug)]
@@ -89,7 +73,7 @@ fn parse_if_statement(input: &str) -> ParseResult<IfStatement> {
     // >   }
     // > }
     if let Ok((input, else_if))
-    = preceded(ws(tag("else ")), parse_if_statement)(input)
+        = preceded(ws(tag("else ")), parse_if_statement)(input)
     {
         Ok((input, IfStatement {
             expr,

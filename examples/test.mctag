@@ -1,3 +1,29 @@
+def hello_(message) {
+	/say "#{message}"
+
+	return 1
+}
+
+def $hello($message, raw) {
+	$message += "hello"
+
+	/tellraw @s { \
+		"nbt": "stack[-1][0]", \
+		 "storage": "tag:runtime" }
+
+	return 2
+}
+
+hello("hello")
+# will turn into
+/data modify storage tag:runtime stack append value ["hello"]
+/function tag:1
+	/tellraw @s { "nbt": "stack[-1][0]", "storage": "tag:runtime" }
+/data remove storage tag:runtime stack[-1]
+
 if true {
+	hello := 1;
+	log(hello);
+
 	/say hello world
 }

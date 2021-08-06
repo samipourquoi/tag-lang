@@ -1,8 +1,5 @@
-use crate::parser::AST;
-use nom::error::Error;
-
 mod parser;
-mod generation;
+mod generator;
 
 fn main() {
     let result = parser::parse(r#"
@@ -15,5 +12,5 @@ fn main() {
         }
     "#).unwrap();
     dbg!(&result);
-    generation::generate(result.1);
+    generator::generate(result.1);
 }
