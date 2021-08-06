@@ -1,5 +1,5 @@
 use crate::generator::Generator;
-use crate::parser::Statement;
+use crate::parser::statement::Statement;
 
 impl Generator {
     pub(in crate::generator) fn generate_statements(&mut self, statements: Vec<Statement>) {

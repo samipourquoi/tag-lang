@@ -1,5 +1,5 @@
 use crate::generator::Generator;
-use crate::parser::IfStatement;
+use crate::parser::statement::IfStatement;
 
 impl Generator {
     pub(in crate::generator) fn generate_if_statement(&mut self, if_stmt: IfStatement) {

@@ -4,6 +4,10 @@ def hello_(message) {
 	return 1
 }
 
+def hello[hello: string] {
+	let $hello: number = world
+}
+
 def $hello($message, raw) {
 	$message += "hello"
 

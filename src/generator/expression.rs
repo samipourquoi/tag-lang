@@ -1,5 +1,5 @@
 use crate::generator::Generator;
-use crate::parser::Expression;
+use crate::parser::expression::Expression;
 
 impl Generator {
     pub(in crate::generator) fn generate_expression(&mut self, expr: Expression) {

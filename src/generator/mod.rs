@@ -2,6 +2,7 @@ mod condition;
 mod expression;
 mod statement;
 mod command;
+mod function;
 
 use super::parser::{AST};
 use std::collections::HashMap;
