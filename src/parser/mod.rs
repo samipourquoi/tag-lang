@@ -5,11 +5,9 @@ pub mod typing;
 
 use nom::IResult;
 use nom::multi::many0;
-use nom::sequence::{delimited, preceded, separated_pair, terminated};
+use nom::sequence::{delimited, terminated};
 use nom::bytes::complete::tag;
-use nom::branch::alt;
-use nom::combinator::map;
-use nom::character::complete::{digit1, not_line_ending, line_ending as eol, multispace0, alpha0, alpha1, alphanumeric1, alphanumeric0};
+use nom::character::complete::{not_line_ending, line_ending as eol, multispace0, alpha1, alphanumeric0};
 use nom::error::ParseError;
 use crate::parser::statement::{Statement, parse_statement};
 
