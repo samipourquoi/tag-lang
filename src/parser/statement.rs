@@ -1,3 +1,5 @@
+use crate::parser::function::parse_function;
+use crate::parser::function::Function;
 use crate::parser::{ParseResult, ws, read_line};
 use nom::branch::alt;
 use nom::combinator::{map, success};
@@ -11,7 +13,8 @@ use crate::parser::typing::{Typing, parse_declaration_typing};
 pub enum Statement {
     Command(Command),
     IfStatement(IfStatement),
-    VariableAssignment(VariableAssignment)
+    VariableAssignment(VariableAssignment),
+    FunctionDeclaration(Function)
 }
 
 #[derive(Debug)]
@@ -49,7 +52,9 @@ pub(in super) fn parse_statement(input: &str) -> ParseResult<Statement> {
         map(parse_if_statement,
             |if_stmt| Statement::IfStatement(if_stmt)),
         map(terminated(parse_variable_declaration, ws(tag(";"))),
-            |var| Statement::VariableAssignment(var))
+            |var| Statement::VariableAssignment(var)),
+        map(parse_function, 
+            |function| Statement::FunctionDeclaration(function))
     ))(input)
 }
 

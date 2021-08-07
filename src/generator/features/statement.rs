@@ -27,7 +27,8 @@ impl Generator {
             },
             VariableAssignment(assignment) => {
                 self.generate_variable_assignment(assignment);
-            }
+            },
+            _ => todo!()
         }
     }
 

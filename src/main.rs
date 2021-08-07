@@ -6,13 +6,8 @@ mod generator;
 
 fn main() {
     let result = parser::parse(r#"
-      $hello := true;
-      $world := false;
-
-      if $hello {
-        if $world {
-          /say yes!!!
-        }
+      def $log(content: string) {
+        /say hello world
       }
     "#).unwrap();
     dbg!(&result);

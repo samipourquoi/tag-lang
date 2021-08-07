@@ -1,3 +1,6 @@
+use crate::parser::function::Function;
+use crate::parser::statement::IfStatement;
+use crate::parser::statement::Statement;
 use crate::generator::Generator;
 use crate::parser::expression::{Expression, Term, Summand, VariableName};
 use crate::parser::statement::VariableAssignment;
@@ -47,6 +50,52 @@ impl IsDynamic for VariableName {
         match self {
             VariableName::Dynamic(_) => true,
             VariableName::Static(_) => false
+        }
+    }
+}
+
+impl IsDynamic for Statement {
+    fn is_dynamic(&self) -> bool { 
+        match self {
+            Statement::IfStatement(if_stmt) => if_stmt.is_dynamic(),
+            Statement::Command(_) => false,
+            Statement::VariableAssignment(var) => var.is_dynamic(),
+            Statement::FunctionDeclaration(function) => function.is_dynamic(),
+            _ => false
+        }
+    }
+}
+
+impl IsDynamic for Vec<Statement> {
+    fn is_dynamic(&self) -> bool { 
+        if self.is_empty() {
+            return false;
+        }
+
+        for statement in self {
+            if statement.is_static() {
+                return false;
+            }
+        }
+
+        true
+    }
+}
+
+impl IsDynamic for IfStatement {
+    fn is_dynamic(&self) -> bool {
+        self.block.is_dynamic()
+            && self.else_if.as_ref().as_ref().map(|else_if| else_if.is_dynamic()).unwrap_or(true)
+            && self.else_block.as_ref().map(|block| block.is_dynamic()).unwrap_or(true)
+            && self.expr.is_dynamic()
+    }
+}
+
+impl IsDynamic for Function {
+    fn is_dynamic(&self) -> bool { 
+        match self {
+            Function::Macro    { .. } => true,
+            Function::Function { .. } => false
         }
     }
 }
