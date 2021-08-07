@@ -1,6 +1,6 @@
 use crate::generator::Generator;
 use crate::parser::statement::{Statement, VariableAssignment};
-use crate::generator::simplify::IsDynamic;
+use crate::generator::staticness::IsStatic;
 
 impl Generator {
     pub fn generate_statements(&mut self, statements: Vec<Statement>) {

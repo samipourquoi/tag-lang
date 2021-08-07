@@ -12,7 +12,7 @@ use crate::parser::ws;
 use crate::parser::identifier;
 use nom::bytes::complete::tag;
 use crate::parser::ParseResult;
-use crate::generator::simplify::IsDynamic;
+use crate::generator::staticness::IsStatic;
 
 #[derive(Debug)]
 pub enum Function {

@@ -1,7 +1,8 @@
 mod features;
 mod scopes;
 mod typing;
-pub mod simplify;
+mod simplify;
+pub mod staticness;
 
 use super::parser::{AST};
 use std::collections::HashMap;

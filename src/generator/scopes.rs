@@ -3,7 +3,7 @@ use crate::generator::Generator;
 use crate::parser::statement::VariableAssignment;
 use std::collections::HashMap;
 use std::any::Any;
-use crate::generator::simplify::IsDynamic;
+use crate::generator::staticness::IsStatic;
 use crate::parser::typing::Typing;
 
 #[derive(Debug)]

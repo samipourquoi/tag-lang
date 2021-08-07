@@ -17,7 +17,7 @@ use nom::bytes::complete::tag;
 use nom::multi::many0;
 use crate::parser::typing::{Typing, parse_declaration_typing};
 use std::iter::FromIterator;
-use crate::generator::simplify::IsDynamic;
+use crate::generator::staticness::IsStatic;
 use nom::character::complete::alphanumeric0;
 
 #[derive(Debug)]
