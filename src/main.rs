@@ -6,9 +6,7 @@ mod generator;
 
 fn main() {
     let result = parser::parse(r#"
-      def $log(content: string) {
-        /say hello world
-      }
+      /say #{1}
     "#).unwrap();
     dbg!(&result);
     generator::generate(result.1);
