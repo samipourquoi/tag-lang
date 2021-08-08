@@ -33,7 +33,8 @@ impl Generator {
                 scope.runtime_variables.insert(declaration.var.clone(), declaration.typing.clone());
             }
             VariableName::Static(_) if declaration.value.is_static() => {
-                let expr = self.simplify_expression(&declaration.value);
+                // let expr = self.simplify_expression(&declaration.value);
+                let expr = declaration.value.clone();
                 let scope = self.scopes.last_mut()
                     .expect("can't assign a variable if there is no scope left.");
 
@@ -49,5 +50,12 @@ impl Generator {
             .position(|scope| scope.runtime_variables.contains_key(var))
             .unwrap() as i32;
         format!("vars[{}].\"{}\"", index, var.get_name())
+    }
+
+    pub fn get_static_variable_value(&self, var: &VariableName) -> Option<Expression> {
+        let scope = self.scopes.iter()
+            .rev()
+            .find(|scope| scope.comptime_variables.contains_key(var));
+        scope.map(|scope| scope.comptime_variables.get(var).unwrap().clone())
     }
 }

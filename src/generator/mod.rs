@@ -8,7 +8,7 @@ use super::parser::{AST};
 use std::collections::HashMap;
 
 #[derive(Debug)]
-struct Generator {
+pub struct Generator {
     file_name_stack: Vec<String>,
     files: HashMap<String, Vec<String>>,
     file_counter: i32,

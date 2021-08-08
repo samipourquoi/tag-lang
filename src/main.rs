@@ -6,7 +6,11 @@ mod generator;
 
 fn main() {
     let result = parser::parse(r#"
-      /say #{1}
+      hello := 1;
+
+      if true {
+        /say #{hello}
+      }
     "#).unwrap();
     dbg!(&result);
     generator::generate(result.1);
