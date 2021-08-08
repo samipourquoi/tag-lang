@@ -5,14 +5,11 @@ mod parser;
 mod generator;
 
 fn main() {
-    let result = parser::parse(r#"
-      $hello := 1;
-      $hello := $hello + 1;
-
-      if true {
-        /say #{hello}
+    let result = parser::parse(r##"
+      def $log($content: string) {
+        /tellraw @a { "storage": "tag:runtime", "tag": "vars[-1].content" }
       }
-    "#).unwrap();
+    "##).unwrap();
     dbg!(&result);
     generator::generate(result.1);
 }

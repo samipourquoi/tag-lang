@@ -42,7 +42,7 @@ pub struct Command {
     pub end: String
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct VariableSignature {
     pub name: VariableName,
     pub typing: Typing

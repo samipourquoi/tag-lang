@@ -5,8 +5,6 @@ use crate::generator::scopes;
 
 impl Generator {
     pub fn generate_statements(&mut self, statements: Vec<Statement>) {
-        self.push_scope();
-
         // first we analyze the statements
         // (e.g. we register the functions)
         for statement in &statements {
@@ -18,23 +16,16 @@ impl Generator {
         for statement in statements {
             self.generate_statement(statement);
         }
-
-        self.pop_scope();
     }
 
     pub fn generate_statement(&mut self, statement: Statement) {
         use Statement::*;
 
         match statement {
-            Command(cmd) => {
-                self.generate_command(cmd);
-            },
-            IfStatement(if_stmt) => {
-                self.generate_if_statement(if_stmt);
-            },
-            VariableAssignment(assignment) => {
-                self.generate_variable_assignment(assignment);
-            },
+            Command(cmd) => self.generate_command(cmd),
+            IfStatement(if_stmt) => self.generate_if_statement(if_stmt),
+            VariableAssignment(assignment) => self.generate_variable_assignment(assignment),
+            FunctionDeclaration(func) => self.generate_function(func),
             _ => todo!()
         }
     }

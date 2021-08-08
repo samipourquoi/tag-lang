@@ -6,7 +6,9 @@ impl Generator {
         self.generate_expression(if_stmt.expr);
 
         let fn_name = self.push_file();
+        self.push_scope();
         self.generate_statements(if_stmt.block);
+        self.pop_scope();
         self.pop_file();
 
         self.write(format!("execute if data storage tag:runtime stack[-1] run function tag:{}", fn_name));

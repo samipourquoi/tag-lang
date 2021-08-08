@@ -1,3 +1,4 @@
+use crate::parser::statement::VariableSignature;
 use crate::parser::Statement;
 use crate::parser::statement::parse_block;
 use nom::combinator::map;
@@ -24,14 +25,8 @@ pub struct Function {
 pub struct FunctionSignature {
     pub name: String,
     pub dynamic: bool,
-    pub static_args: Vec<Argument>,
-    pub dyn_args: Vec<Argument>
-}
-
-#[derive(Clone, Debug, PartialEq, Eq, Hash)]
-pub struct Argument {
-    pub var: VariableName,
-    pub typing: Typing
+    pub static_args: Vec<VariableSignature>,
+    pub dyn_args: Vec<VariableSignature>
 }
 
 pub fn parse_function(input: &str) -> ParseResult<Function> {
@@ -40,15 +35,15 @@ pub fn parse_function(input: &str) -> ParseResult<Function> {
     let (input, args) = delimited(ws(tag("(")), separated_list0(
         ws(tag(",")),
         map(pair(parse_variable, parse_declaration_typing),
-            |(var, typing)| Argument { var, typing })
+            |(name, typing)| VariableSignature { name, typing })
     ), ws(tag(")")))(input)?;
     let (input, block) = parse_block(input)?;
 
-    let dyn_args: Vec<Argument> = args.iter()
-        .filter(|arg| arg.var.is_dynamic())
+    let dyn_args: Vec<VariableSignature> = args.iter()
+        .filter(|arg| arg.name.is_dynamic())
         .cloned().collect();
-    let static_args: Vec<Argument> = args.iter()
-        .filter(|arg| arg.var.is_static())
+    let static_args: Vec<VariableSignature> = args.iter()
+        .filter(|arg| arg.name.is_static())
         .cloned().collect();
 
     let signature = match fn_name {

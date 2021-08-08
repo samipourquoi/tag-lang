@@ -52,7 +52,9 @@ impl Generator {
 pub fn generate(ast: AST) {
     let mut ctx = Generator::new();
 
+    ctx.push_scope();
     ctx.generate_statements(ast.statements);
+    ctx.pop_scope();
 
     dbg!(ctx);
 }
