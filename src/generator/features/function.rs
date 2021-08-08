@@ -12,8 +12,13 @@ impl Generator {
             let name = self.push_file();
             self.push_scope();
 
-            for arg in &function.signature.get_dynamic_args() {
-                self.register_runtime_variable(arg);
+            for sign in &function.signature.get_dynamic_args() {
+                self.register_runtime_variable(sign);
+                self.write(format!(
+                    "data modify storage tag:runtime vars[-1].\"{}\" append value from storage tag:runtime stack[-1]",
+                    sign.name.get_name()
+                ));
+                self.generate_pop_expression();
             }
 
             self.generate_statements(function.block);
@@ -40,21 +45,37 @@ impl Generator {
                 });
             }
 
-            // TODO: dynamic arguments
-
             if func.is_static() {
                 self.push_static_scope();
                 self.generate_statements(func.block.clone());
                 self.pop_static_scope();
             } else if func.is_dynamic() && !static_args.is_empty() {
-                let name = self.push_file();
+                for (_, expr) in &dyn_args {
+                    self.generate_expression(expr.clone());
+                }
+
                 self.push_scope();
+
+                for (sign, _) in &dyn_args {
+                    self.register_runtime_variable(sign);
+                    self.write(format!(
+                        "data modify storage tag:runtime vars[-1].\"{}\" append value from storage tag:runtime stack[-1]",
+                        sign.name.get_name()
+                    ));
+                    self.generate_pop_expression();
+                }
+
+                let name = self.push_file();
+
                 self.generate_statements(func.block.clone());
                 self.pop_scope();
                 self.pop_file();
 
                 self.write(format!("function tag:{}", name))
             } else if func.is_dynamic() && static_args.is_empty() {
+                for (_, expr) in &dyn_args {
+                    self.generate_expression(expr.clone());
+                }
                 self.write(format!("function tag:{}", file_name.unwrap()))
             }
         } else {
