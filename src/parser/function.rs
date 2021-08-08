@@ -1,3 +1,6 @@
+use crate::parser::expression::parse_expression;
+use nom::branch::alt;
+use crate::parser::expression::Expression;
 use crate::parser::statement::VariableSignature;
 use crate::parser::Statement;
 use crate::parser::statement::parse_block;
@@ -14,8 +17,9 @@ use crate::parser::identifier;
 use nom::bytes::complete::tag;
 use crate::parser::ParseResult;
 use crate::generator::staticness::IsStatic;
+use nom::character::complete::{multispace0, multispace1};
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Function {
     pub signature: FunctionSignature,
     pub block: Vec<Statement>
@@ -23,15 +27,19 @@ pub struct Function {
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct FunctionSignature {
-    pub name: String,
-    pub dynamic: bool,
-    pub static_args: Vec<VariableSignature>,
-    pub dyn_args: Vec<VariableSignature>
+    pub name: VariableName,
+    pub args: Vec<VariableSignature>
+}
+
+#[derive(Debug, Clone)]
+pub struct FunctionCall {
+    pub name: VariableName,
+    pub args: Vec<Expression>
 }
 
 pub fn parse_function(input: &str) -> ParseResult<Function> {
     let (input, _) = tag("def ")(input)?;
-    let (input, fn_name) = ws(parse_variable)(input)?;
+    let (input, name) = ws(parse_variable)(input)?;
     let (input, args) = delimited(ws(tag("(")), separated_list0(
         ws(tag(",")),
         map(pair(parse_variable, parse_declaration_typing),
@@ -42,19 +50,40 @@ pub fn parse_function(input: &str) -> ParseResult<Function> {
     let dyn_args: Vec<VariableSignature> = args.iter()
         .filter(|arg| arg.name.is_dynamic())
         .cloned().collect();
-    let static_args: Vec<VariableSignature> = args.iter()
-        .filter(|arg| arg.name.is_static())
-        .cloned().collect();
 
-    let signature = match fn_name {
-        VariableName::Dynamic(name) => FunctionSignature {
-            dynamic: true, name, dyn_args, static_args,
+    let signature = match &name {
+        VariableName::Dynamic(_) => FunctionSignature {
+            name: name.clone(), args,
         },
-        VariableName::Static(name) if dyn_args.is_empty() && block.is_static() => FunctionSignature {
-            dynamic: false, name, dyn_args, static_args,
+        VariableName::Static(_) if dyn_args.is_empty() && block.is_static() => FunctionSignature {
+            name: name.clone(), args
         },
         _ => panic!("can't use dynamic args in a macro declaration.")
     };
 
+    if name.is_static() && block.is_dynamic() {
+        panic!("can't use dynamic statements in a static function");
+    }
+
     Ok((input, Function { signature, block }))
+}
+
+pub fn parse_function_call(input: &str) -> ParseResult<FunctionCall> {
+    let (input, name) = parse_variable(input)?;
+    let (input, args) = delimited(
+        ws(tag("(")),
+        separated_list0(
+            ws(tag(",")),
+            parse_expression,
+        ),
+        ws(tag(")"))
+    )(input)?;
+
+    if name.is_static() && args.iter().any(|arg| arg.is_dynamic()) {
+        panic!("can't call a static function with dynamic arguments")
+    }
+
+    Ok((input, FunctionCall {
+        name, args
+    }))
 }

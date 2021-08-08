@@ -47,7 +47,8 @@ impl Simplify<i32> for Term {
     fn simplify<'a>(&self, ctx: &'a Generator) -> Result<i32, &'a str> { 
         match self {
             Term::Number(n) => Ok(*n),
-            Term::Expression(expr) => expr.simplify(ctx)
+            Term::Expression(expr) => expr.simplify(ctx),
+            Term::FunctionCall(call) => todo!()
         }
     }
 }

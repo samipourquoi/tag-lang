@@ -1,3 +1,4 @@
+use crate::parser::function::FunctionCall;
 use crate::parser::statement::VariableSignature;
 use crate::parser::function::FunctionSignature;
 use crate::parser::function::Function;
@@ -36,7 +37,8 @@ impl IsStatic for Term {
     fn is_static(&self) -> bool {
         match self {
             Term::Number(_) => true,
-            Term::Expression(expr) => expr.is_static()
+            Term::Expression(expr) => expr.is_static(),
+            Term::FunctionCall(call) => call.is_static()
         }
     }
 }
@@ -91,10 +93,26 @@ impl IsStatic for IfStatement {
 
 impl IsStatic for Function {
     fn is_static(&self) -> bool { 
-        self.signature.is_dynamic()
+        self.signature.is_static()
     }
 }
 
 impl IsStatic for FunctionSignature { 
-    fn is_static(&self) -> bool { self.dynamic }
+    fn is_static(&self) -> bool { self.name.is_static() }
+}
+
+impl FunctionSignature {
+    pub fn get_dynamic_args(&self) -> Vec<&VariableSignature> {
+        self.args.iter().filter(|arg| arg.is_dynamic()).collect()
+    }
+    
+    pub fn get_static_args(&self) -> Vec<&VariableSignature> {
+        self.args.iter().filter(|arg| arg.is_static()).collect()
+    }
+}
+
+impl IsStatic for FunctionCall {
+    fn is_static(&self) -> bool {
+        self.name.is_static()
+    }
 }

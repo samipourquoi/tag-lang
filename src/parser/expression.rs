@@ -1,3 +1,5 @@
+use crate::parser::function::parse_function_call;
+use crate::parser::function::FunctionCall;
 use nom::branch::alt;
 use nom::combinator::{map, opt};
 use nom::sequence::{separated_pair, delimited};
@@ -24,6 +26,7 @@ pub enum Summand {
 #[derive(Debug, Clone)]
 pub enum Term {
     Number(i32),
+    FunctionCall(FunctionCall),
     Expression(Box<Expression>)
 }
 
@@ -73,6 +76,9 @@ pub(in super) fn parse_term(input: &str) -> ParseResult<Term> {
     alt((
         map(digit1,
             |d: &str| Term::Number(d.to_string().parse().unwrap())),
+
+        map(parse_function_call,
+            |call| Term::FunctionCall(call)),
 
         delimited(ws(tag("(")),
                   map(parse_expression, |expr| Term::Expression(Box::new(expr))),

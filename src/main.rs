@@ -6,9 +6,12 @@ mod generator;
 
 fn main() {
     let result = parser::parse(r##"
-      def $log($content: string) {
-        /tellraw @a { "storage": "tag:runtime", "tag": "vars[-1].content" }
+      def log(content) {
+        /say #{content}
       }
+
+      log(1);
+      log(2 * 3);
     "##).unwrap();
     dbg!(&result);
     generator::generate(result.1);

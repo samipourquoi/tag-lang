@@ -1,3 +1,5 @@
+use crate::parser::function::parse_function_call;
+use crate::parser::function::FunctionCall;
 use nom::bytes::complete::take_until;
 use nom::combinator::into;
 use nom::multi::many1;
@@ -20,15 +22,16 @@ use std::iter::FromIterator;
 use crate::generator::staticness::IsStatic;
 use nom::character::complete::alphanumeric0;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Statement {
     Command(Command),
     IfStatement(IfStatement),
     VariableAssignment(VariableAssignment),
-    FunctionDeclaration(Function)
+    FunctionDeclaration(Function),
+    FunctionCall(FunctionCall)
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct IfStatement {
     pub expr: Expression,
     pub block: Vec<Statement>,
@@ -36,7 +39,7 @@ pub struct IfStatement {
     pub else_if: Box<Option<IfStatement>>
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Command {
     pub start: Vec<(String, Expression)>,
     pub end: String
@@ -48,7 +51,7 @@ pub struct VariableSignature {
     pub typing: Typing
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct VariableAssignment {
     pub signature: VariableSignature,
     pub value: Expression
@@ -71,7 +74,9 @@ pub(in super) fn parse_statement(input: &str) -> ParseResult<Statement> {
         map(terminated(parse_variable_declaration, ws(tag(";"))),
             |var| Statement::VariableAssignment(var)),
         map(parse_function, 
-            |function| Statement::FunctionDeclaration(function))
+            |function| Statement::FunctionDeclaration(function)),
+        map(terminated(parse_function_call, ws(tag(";"))),
+            |call| Statement::FunctionCall(call))
     ))(input)
 }
 

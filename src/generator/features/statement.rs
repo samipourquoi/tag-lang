@@ -9,7 +9,7 @@ impl Generator {
         // (e.g. we register the functions)
         for statement in &statements {
             if let Statement::FunctionDeclaration(func) = statement {
-                self.register_function(func.signature.clone())
+                self.register_function(func.clone())
             }
         }
 
@@ -26,6 +26,7 @@ impl Generator {
             IfStatement(if_stmt) => self.generate_if_statement(if_stmt),
             VariableAssignment(assignment) => self.generate_variable_assignment(assignment),
             FunctionDeclaration(func) => self.generate_function(func),
+            FunctionCall(call) => self.generate_function_call(call),
             _ => todo!()
         }
     }

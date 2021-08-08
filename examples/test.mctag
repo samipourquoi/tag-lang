@@ -1,2 +1,0 @@
-$hello := 1
-/data get storage tag:runtime #{@hello}

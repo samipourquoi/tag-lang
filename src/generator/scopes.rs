@@ -1,3 +1,5 @@
+use crate::parser::function::FunctionCall;
+use crate::parser::statement::Statement;
 use crate::parser::statement::VariableSignature;
 use std::collections::HashSet;
 use crate::parser::function::FunctionSignature;
@@ -14,21 +16,29 @@ use crate::generator::simplify::Simplify;
 pub(in super) struct Scope {
     runtime_variables: HashMap<VariableName, Typing>,
     comptime_variables: HashMap<VariableName, Expression>,
-    functions: HashSet<FunctionSignature>
+    functions: HashMap<FunctionSignature, Function>
 }
 
 impl Generator {
-    pub fn push_scope(&mut self) {
+    pub fn push_static_scope(&mut self) {
         self.scopes.push(Scope {
             runtime_variables: HashMap::new(),
             comptime_variables: HashMap::new(),
-            functions: HashSet::new()
+            functions: HashMap::new()
         });
+    }
+
+    pub fn pop_static_scope(&mut self) {
+        self.scopes.pop().expect("can't pop a scope if there is none left.");
+    }
+
+    pub fn push_scope(&mut self) {
+        self.push_static_scope();
         self.write("data modify storage tag:runtime vars append value {}");
     }
 
     pub fn pop_scope(&mut self) {
-        self.scopes.pop().expect("can't pop a scope if there is none left.");
+        self.pop_static_scope();
         self.write("data remove storage tag:runtime vars[-1]");
     }
 
@@ -69,15 +79,26 @@ impl Generator {
         scope.map(|scope| scope.comptime_variables.get(var).unwrap().clone())
     }
 
-    pub fn register_function(&mut self, signature: FunctionSignature) {
+    pub fn register_function(&mut self, function: Function) {
         let scope = self.peek_scope();
-        scope.functions.insert(signature);
+        scope.functions.insert(function.signature.clone(), function);
     }
 
-    pub fn does_function_exist(&self, signature: FunctionSignature) -> bool {
-        self.scopes.iter()
-            .rev()
-            .find(|scope| scope.functions.contains(&signature))
-            .is_some()
+    pub fn resolve_function_call(&self, call: &FunctionCall) -> Option<&Function> {
+        for scope in self.scopes.iter()
+            .rev().collect::<Vec<_>>()
+        {
+            for (sign, block) in &scope.functions {
+                for (sign_arg, call_arg) in sign.args.iter().zip(&call.args) {
+                    if sign_arg.is_static() && call_arg.is_dynamic() {
+                        break;
+                    }
+                }
+
+                return Some(block)
+            }
+        }
+
+        None
     }
 }
