@@ -29,10 +29,10 @@ impl Generator {
         ctx
     }
 
-    fn write(&mut self, content: String) {
+    fn write<S: ToString>(&mut self, content: S) {
         let name = self.file_name_stack.last().expect("file name stack is empty");
         let file = self.files.get_mut(name).unwrap();
-        file.push(content);
+        file.push(content.to_string());
     }
 
     fn push_file(&mut self) -> String {

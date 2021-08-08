@@ -6,7 +6,8 @@ mod generator;
 
 fn main() {
     let result = parser::parse(r#"
-      hello := 1;
+      $hello := 1;
+      $hello := $hello + 1;
 
       if true {
         /say #{hello}

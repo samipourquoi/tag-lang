@@ -1,18 +1,25 @@
 use crate::generator::Generator;
 use crate::parser::statement::{Statement, VariableAssignment};
 use crate::generator::staticness::IsStatic;
+use crate::generator::scopes;
 
 impl Generator {
     pub fn generate_statements(&mut self, statements: Vec<Statement>) {
         self.push_scope();
-        self.write("data modify storage tag:runtime vars append value {}".to_string());
+
+        // first we analyze the statements
+        // (e.g. we register the functions)
+        for statement in &statements {
+            if let Statement::FunctionDeclaration(func) = statement {
+                self.register_function(func.signature.clone())
+            }
+        }
 
         for statement in statements {
             self.generate_statement(statement);
         }
 
         self.pop_scope();
-        self.write(format!("data remove storage tag:runtime vars[-1]"));
     }
 
     pub fn generate_statement(&mut self, statement: Statement) {
@@ -33,13 +40,13 @@ impl Generator {
     }
 
     pub fn generate_variable_assignment(&mut self, assignment: VariableAssignment) {
-        self.assign_variable(&assignment);
-
         if assignment.is_dynamic() {
             self.generate_expression(assignment.value);
             self.write(format!("data modify storage tag:runtime vars[-1].\"{}\" set from storage tag:runtime stack[-1]",
-                               assignment.var.get_name()));
+                               assignment.signature.name.get_name()));
             self.generate_pop_expression();
+        } else {
+            self.assign_static_variable(assignment);
         }
     }
 }

@@ -3,22 +3,10 @@ use crate::generator::Generator;
 
 impl Generator {
     pub fn generate_function(&mut self, function: Function) {
-        match function {
-            Function::Macro {
-                name,
-                static_args,
-                block
-            } => {
+        self.push_file();
 
-            },
-            Function::Function {
-                name,
-                static_args,
-                dyn_args,
-                block
-            } => {
+        self.generate_statements(function.block);
 
-            }
-        }
+        self.pop_file();
     }
 }

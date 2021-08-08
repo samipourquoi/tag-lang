@@ -15,21 +15,20 @@ use crate::parser::ParseResult;
 use crate::generator::staticness::IsStatic;
 
 #[derive(Debug)]
-pub enum Function {
-    Macro {
-        name: String,
-        static_args: Vec<Argument>,
-        block: Vec<Statement>
-    },
-    Function {
-        name: String,
-        dyn_args: Vec<Argument>,
-        static_args: Vec<Argument>,
-        block: Vec<Statement>
-    }
+pub struct Function {
+    pub signature: FunctionSignature,
+    pub block: Vec<Statement>
 }
 
-#[derive(Clone, Debug)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct FunctionSignature {
+    pub name: String,
+    pub dynamic: bool,
+    pub static_args: Vec<Argument>,
+    pub dyn_args: Vec<Argument>
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub struct Argument {
     pub var: VariableName,
     pub typing: Typing
@@ -52,13 +51,15 @@ pub fn parse_function(input: &str) -> ParseResult<Function> {
         .filter(|arg| arg.var.is_static())
         .cloned().collect();
 
-    Ok((input, match fn_name {
-        VariableName::Dynamic(name) => Function::Function {
-            name, dyn_args, static_args, block
+    let signature = match fn_name {
+        VariableName::Dynamic(name) => FunctionSignature {
+            dynamic: true, name, dyn_args, static_args,
         },
-        VariableName::Static(name) if dyn_args.is_empty() && block.is_static() => Function::Macro {
-            name, static_args, block
+        VariableName::Static(name) if dyn_args.is_empty() && block.is_static() => FunctionSignature {
+            dynamic: false, name, dyn_args, static_args,
         },
         _ => panic!("can't use dynamic args in a macro declaration.")
-    }))
+    };
+
+    Ok((input, Function { signature, block }))
 }

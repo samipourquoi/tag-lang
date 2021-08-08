@@ -1,3 +1,5 @@
+use crate::parser::statement::VariableSignature;
+use crate::parser::function::FunctionSignature;
 use crate::parser::function::Function;
 use crate::parser::statement::IfStatement;
 use crate::parser::statement::Statement;
@@ -41,7 +43,13 @@ impl IsStatic for Term {
 
 impl IsStatic for VariableAssignment {
     fn is_static(&self) -> bool {
-        self.var.is_static()
+        self.signature.is_static() && self.value.is_static()
+    }
+}
+
+impl IsStatic for VariableSignature {
+    fn is_static(&self) -> bool {
+        self.name.is_static()
     }
 }
 
@@ -83,9 +91,10 @@ impl IsStatic for IfStatement {
 
 impl IsStatic for Function {
     fn is_static(&self) -> bool { 
-        match self {
-            Function::Macro    { .. } => true,
-            Function::Function { .. } => false
-        }
+        self.signature.is_dynamic()
     }
+}
+
+impl IsStatic for FunctionSignature { 
+    fn is_static(&self) -> bool { self.dynamic }
 }
