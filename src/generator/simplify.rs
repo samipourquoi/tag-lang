@@ -11,8 +11,10 @@ pub trait Simplify<T> {
 
 impl Simplify<String> for Expression {
     fn simplify<'a>(&self, ctx: &'a Generator) -> Result<String, &'a str> {
-        let to_i32: i32 = self.simplify(ctx)?;
-        Ok(to_i32.to_string())
+        let as_i32 = self.simplify(ctx).map(|i: i32| i.to_string());
+        let as_bool = self.simplify(ctx).map(|bl: bool| bl.to_string());
+
+        as_i32.or(as_bool)
     }
 }
 
@@ -26,10 +28,22 @@ impl Simplify<i32> for Expression {
             },
             Expression::Summand(summand) => summand.simplify(ctx),
             Expression::Boolean(_) => Err("can't resolve a boolean into an i32"),
+            Expression::Variable(var) => ctx.get_static_variable_value(var)
+                .expect("unknown variable")
+                .simplify(ctx)
+        }
+    }
+}
+
+impl Simplify<bool> for Expression {
+    fn simplify<'a>(&self, ctx: &'a Generator) -> Result<bool, &'a str> {
+        match self {
+            Expression::Boolean(bl) => Ok(*bl),
             Expression::Variable(var) => {
                 let expr = ctx.get_static_variable_value(var).expect("unknown variable");
                 expr.simplify(ctx)
             }
+            _ => Err("can't resolve to a boolean")
         }
     }
 }

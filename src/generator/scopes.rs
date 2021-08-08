@@ -11,12 +11,13 @@ use std::collections::HashMap;
 use crate::generator::staticness::IsStatic;
 use crate::parser::typing::Typing;
 use crate::generator::simplify::Simplify;
+use std::cmp::Ordering;
 
 #[derive(Debug)]
 pub(in super) struct Scope {
     runtime_variables: HashMap<VariableName, Typing>,
     comptime_variables: HashMap<VariableName, Expression>,
-    functions: HashMap<FunctionSignature, Function>
+    functions: HashMap<FunctionSignature, (Function, Option<String>)>
 }
 
 impl Generator {
@@ -79,26 +80,49 @@ impl Generator {
         scope.map(|scope| scope.comptime_variables.get(var).unwrap().clone())
     }
 
-    pub fn register_function(&mut self, function: Function) {
+    pub fn register_function(&mut self, function: Function, file_name: Option<String>) {
         let scope = self.peek_scope();
-        scope.functions.insert(function.signature.clone(), function);
+        scope.functions.insert(function.signature.clone(), (function, file_name));
     }
 
-    pub fn resolve_function_call(&self, call: &FunctionCall) -> Option<&Function> {
-        for scope in self.scopes.iter()
-            .rev().collect::<Vec<_>>()
-        {
-            for (sign, block) in &scope.functions {
+    pub fn resolve_function_call(&self, call: &FunctionCall) -> Option<&(Function, Option<String>)> {
+        // To resolve a function, we check if the call signature is the same
+        // as the function signature.
+        // However, compile-time (=static) variables can also be used as dynamic
+        // variables, and we want to support overloading. So for each function,
+        // we associate a "score". A compile-time value matching with a dynamic
+        // argument won't add to the score, while a compile-time value matching
+        // with a static argument will.
+        // TODO: other factors will be type matching (i.e. the stricter the type is,
+        // the more important it is).
+
+        type Info = (Function, Option<String>);
+
+        let candidates: Vec<(&Info, i32)> = self.scopes.iter().rev().map(|scope| {
+            scope.functions.iter().filter_map(|(sign, info)| {
+                let mut score = 0;
+
+                if info.0.signature.name != call.name {
+                    return None;
+                }
+
                 for (sign_arg, call_arg) in sign.args.iter().zip(&call.args) {
                     if sign_arg.is_static() && call_arg.is_dynamic() {
-                        break;
+                        return None;
+                    }
+
+                    // TODO: check type
+
+                    if sign_arg.is_static() && call_arg.is_static() {
+                        score += 1;
                     }
                 }
 
-                return Some(block)
-            }
-        }
+                Some((info, score))
+            }).collect::<Vec<(&Info, i32)>>()
+        }).flatten().collect::<Vec<(&Info, i32)>>();
 
-        None
+        candidates.iter().max_by(|(_, score1), (_, score2)| score1.cmp(score2))
+            .map(|candidate| candidate.0)
     }
 }
