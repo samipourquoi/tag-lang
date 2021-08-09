@@ -34,6 +34,7 @@ impl Generator {
 
     pub fn generate_variable_assignment(&mut self, assignment: VariableAssignment) {
         if assignment.is_dynamic() {
+            self.register_runtime_variable(&assignment.signature);
             self.generate_expression(assignment.value);
             self.write(format!("data modify storage tag:runtime vars[-1].\"{}\" set from storage tag:runtime stack[-1]",
                                assignment.signature.name.get_name()));

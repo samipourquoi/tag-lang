@@ -18,8 +18,7 @@ impl IsStatic for Expression {
         match self {
             Expression::Sum(summand, expr) => summand.is_static() && expr.is_static(),
             Expression::Summand(summand) => summand.is_static(),
-            Expression::Boolean(_) => true,
-            Expression::Variable(var) => var.is_static()
+            Expression::Boolean(_) => true
         }
     }
 }
@@ -38,7 +37,8 @@ impl IsStatic for Term {
         match self {
             Term::Number(_) => true,
             Term::Expression(expr) => expr.is_static(),
-            Term::FunctionCall(call) => call.is_static()
+            Term::FunctionCall(call) => call.is_static(),
+            Term::Variable(var) => var.is_static()
         }
     }
 }

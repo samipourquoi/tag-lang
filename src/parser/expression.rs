@@ -13,8 +13,7 @@ use nom::Parser;
 pub enum Expression {
     Sum(Summand, Box<Expression>),
     Summand(Summand),
-    Boolean(bool),
-    Variable(VariableName)
+    Boolean(bool)
 }
 
 #[derive(Debug, Clone)]
@@ -27,6 +26,7 @@ pub enum Summand {
 pub enum Term {
     Number(i32),
     FunctionCall(FunctionCall),
+    Variable(VariableName),
     Expression(Box<Expression>)
 }
 
@@ -54,8 +54,6 @@ pub(in super) fn parse_expression(input: &str) -> ParseResult<Expression> {
 
         map(tag("true"), |_| Expression::Boolean(true)),
         map(tag("false"), |_| Expression::Boolean(false)),
-
-        map(parse_variable, |var| Expression::Variable(var))
     ))(input)
 }
 
@@ -77,8 +75,9 @@ pub(in super) fn parse_term(input: &str) -> ParseResult<Term> {
         map(digit1,
             |d: &str| Term::Number(d.to_string().parse().unwrap())),
 
-        map(parse_function_call,
-            |call| Term::FunctionCall(call)),
+        map(parse_function_call, |call| Term::FunctionCall(call)),
+
+        map(parse_variable, |var| Term::Variable(var)),
 
         delimited(ws(tag("(")),
                   map(parse_expression, |expr| Term::Expression(Box::new(expr))),
