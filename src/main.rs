@@ -1,14 +1,22 @@
 #![allow(dead_code)]
 #![allow(unused_imports)]
 
+use nom::error::convert_error;
+
 mod parser;
 mod generator;
 
 fn main() {
-    let result = parser::parse(r##"
-      one := 1;
-      $var := 3 * one + 2;
-    "##).unwrap();
-    dbg!(&result);
-    generator::generate(result.1);
+    let input = r##"
+        def hello() {
+        }
+    "##;
+    let result = parser::parse(input);
+
+    if let Ok(result) = result {
+        dbg!(&result);
+        generator::generate(result.1);
+    } else if let Err(nom::Err::Error(err) | nom::Err::Failure(err)) = result {
+        println!("{}", convert_error(input, err));
+    }
 }

@@ -1,3 +1,4 @@
+use crate::parser::Span;
 use crate::parser::function::parse_function_call;
 use crate::parser::function::FunctionCall;
 use nom::bytes::complete::take_until;
@@ -57,7 +58,7 @@ pub struct VariableAssignment {
     pub value: Expression
 }
 
-pub(in super) fn parse_block(input: &str) -> ParseResult<Vec<Statement>> {
+pub(in super) fn parse_block(input: Span) -> ParseResult<Vec<Statement>> {
     delimited(
         ws(tag("{")),
         many0(ws(parse_statement)),
@@ -65,7 +66,7 @@ pub(in super) fn parse_block(input: &str) -> ParseResult<Vec<Statement>> {
     )(input)
 }
 
-pub(in super) fn parse_statement(input: &str) -> ParseResult<Statement> {
+pub(in super) fn parse_statement(input: Span) -> ParseResult<Statement> {
     alt((
         map(parse_command,
             |cmd| Statement::Command(cmd)),
@@ -80,7 +81,7 @@ pub(in super) fn parse_statement(input: &str) -> ParseResult<Statement> {
     ))(input)
 }
 
-pub(in super) fn parse_if_statement(input: &str) -> ParseResult<IfStatement> {
+pub(in super) fn parse_if_statement(input: Span) -> ParseResult<IfStatement> {
     let (input, expr) = preceded(tag("if "), ws(parse_expression))(input)?;
     let (input, block) = parse_block(input)?;
 
@@ -129,7 +130,7 @@ pub(in super) fn parse_if_statement(input: &str) -> ParseResult<IfStatement> {
     }
 }
 
-pub fn parse_command(input: &str) -> ParseResult<Command> {
+pub fn parse_command(input: Span) -> ParseResult<Command> {
     let (input, _) = tag("/")(input)?;
     let (input, start) = many0(
         pair(
@@ -152,7 +153,7 @@ pub fn parse_command(input: &str) -> ParseResult<Command> {
     Ok((input, Command { start, end }))
 }
 
-pub(in super) fn parse_variable_declaration(input: &str)
+pub(in super) fn parse_variable_declaration(input: Span)
     -> ParseResult<VariableAssignment>
 {
     let (input, name) = parse_variable(input)?;
