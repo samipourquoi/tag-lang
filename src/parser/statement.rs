@@ -134,12 +134,9 @@ pub fn parse_command(input: Span) -> ParseResult<Command> {
     let (input, _) = tag("/")(input)?;
     let (input, start) = many0(
         pair(
-            map(
-                verify(
-                    take_until("#{"), 
-                    |string: &str| string.chars().all(|c| !is_newline(c as u8))
-                ), 
-                str::to_string
+            verify(
+                take_until("#{"),
+                |string: &Span| string.fragment().chars().all(|c| !is_newline(c as u8))
             ),
             delimited(tag("#{"), ws(parse_expression), tag("}"))
         )
@@ -149,6 +146,10 @@ pub fn parse_command(input: Span) -> ParseResult<Command> {
     if start.iter().any(|(_, expr)| expr.is_dynamic()) {
         panic!("can't interpolate a dynamic value in a command");
     }
+
+    let start: Vec<(String, Expression)> = start.into_iter()
+        .map(|(a, b)| (a.fragment().to_string(), b))
+        .collect();
 
     Ok((input, Command { start, end }))
 }

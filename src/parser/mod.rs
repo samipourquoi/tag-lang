@@ -6,7 +6,7 @@ pub mod typing;
 use nom_locate::LocatedSpan;
 use nom::error::ErrorKind;
 use nom::combinator::all_consuming;
-use nom::IResult;
+use nom::{IResult, Offset};
 use nom::multi::many0;
 use nom::sequence::{delimited, terminated};
 use nom::bytes::complete::tag;
@@ -22,9 +22,29 @@ pub struct AST {
 
 type Span<'a> = LocatedSpan<&'a str>;
 
+#[derive(Debug, Clone, Eq, PartialEq)]
+pub struct Position {
+    pub offset: usize,
+    pub length: usize,
+    pub line: usize,
+    pub column: usize,
+}
+
+impl From<Span<'_>> for Position {
+    fn from(span: Span) -> Self {
+        Position {
+            offset: span.location_offset(),
+            length: span.fragment().len(),
+            line: span.location_line() as usize,
+            column: span.get_column()
+        }
+    }
+}
+
 type ParseResult<'a, T> = IResult<Span<'a>, T, GreedyError<Span<'a>, ErrorKind>>;
 
-pub fn parse(input: Span) -> ParseResult<AST> {
+pub fn parse(input: &str) -> ParseResult<AST> {
+    let input = Span::new(input);
     let (input, statements) = all_consuming(many0(ws(parse_statement)))(input)?;
 
     Ok((input, AST {
@@ -36,18 +56,21 @@ fn identifier(input: Span) -> ParseResult<String> {
     let (input, first) = alpha1(input)?;
     let (input, second) = alphanumeric0(input)?;
     let (input, third) = many0(tag("'"))(input)?;
+    let third: Vec<_> = third.iter()
+        .map(|s: &Span| *s.fragment())
+        .collect();
 
-    Ok((input, first.to_string() + second + &third.join("")))
+    Ok((input, first.to_string() + &second.to_string() + &third.join("")))
 }
 
 fn read_line(input: Span) -> ParseResult<String> {
     let (input, line) = terminated(not_line_ending, eol)(input)?;
-    Ok((input, line.to_string()))
+    Ok((input, line.fragment().to_string()))
 }
 
 fn end_of_line(input: Span) -> ParseResult<Span> {
     if input.is_empty() {
-        Ok((input, input))
+        Ok((input.clone(), input))
     } else {
         eol(input)
     }

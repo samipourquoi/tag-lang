@@ -1,4 +1,4 @@
-use crate::parser::Span;
+use crate::parser::{Span, Position};
 use nom::combinator::cut;
 use nom::error::context;
 use crate::parser::expression::parse_expression;
@@ -27,7 +27,7 @@ use nom_locate::position;
 pub struct Function {
     pub signature: FunctionSignature,
     pub block: Vec<Statement>,
-    pub position: Span
+    pub position: Position
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -46,6 +46,7 @@ pub fn parse_function(input: Span) -> ParseResult<Function> {
     context(
         "function definition",
         |input| {
+            let (input, position) = position(input)?;
             let (input, _) = tag("def ")(input)?;
             let (input, name) = ws(parse_variable)(input)?;
             let (input, args) = delimited(ws(tag("(")), separated_list0(
@@ -54,7 +55,6 @@ pub fn parse_function(input: Span) -> ParseResult<Function> {
                     |(name, typing)| VariableSignature { name, typing })
             ), ws(tag(")")))(input)?;
             let (input, block) = parse_block(input)?;
-            let (input, position) = position(input)?;
 
             let dyn_args: Vec<VariableSignature> = args.iter()
                 .filter(|arg| arg.name.is_dynamic())
@@ -74,12 +74,12 @@ pub fn parse_function(input: Span) -> ParseResult<Function> {
                 panic!("can't use dynamic statements in a static function");
             }
 
-            Ok((input, Function { signature, block, position }))
+            Ok((input, Function { signature, block, position: position.into() }))
         }
     )(input)
 }
 
-pub fn parse_function_call(input: &str) -> ParseResult<FunctionCall> {
+pub fn parse_function_call(input: Span) -> ParseResult<FunctionCall> {
     let (input, name) = parse_variable(input)?;
     let (input, args) = delimited(
         ws(tag("(")),
