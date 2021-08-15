@@ -47,7 +47,7 @@ impl Simplify<i32> for Term {
             Term::Number(n) => Ok(*n),
             Term::Expression(expr) => expr.simplify(ctx),
             Term::Variable(var) => ctx.get_static_variable_value(var)
-                .expect("unknown variable")
+                .ok_or("unknown variable")?
                 .simplify(ctx),
             Term::FunctionCall(call) => todo!()
         }
@@ -78,7 +78,7 @@ impl Simplify<bool> for Term {
         match self {
             Term::Expression(expr) => expr.simplify(ctx),
             Term::Variable(var) => {
-                let expr = ctx.get_static_variable_value(var).expect("unknown variable");
+                let expr = ctx.get_static_variable_value(var).ok_or("unknown variable")?;
                 expr.simplify(ctx)
             },
             _ => Err("can't convert to bool")

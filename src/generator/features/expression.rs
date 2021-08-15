@@ -9,7 +9,8 @@ use crate::errors::CompilerError;
 impl Generator {
     pub fn generate_expression(&mut self, expr: Expression) -> Result<(), CompilerError> {
         if expr.is_static() {
-            let value: String = expr.simplify(self).unwrap();
+            let value: String = expr.simplify(self)
+                .map_err(|error| CompilerError { position: expr.pos().clone(), error: error.to_string() })?;
             self.write(format!("data modify storage tag:runtime stack append value {}", value));
             return Ok(());
         }

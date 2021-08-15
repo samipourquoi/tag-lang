@@ -55,7 +55,7 @@ impl Generator {
     }
 
     pub fn assign_static_variable(&mut self, assignment: VariableAssignment) -> Result<(), CompilerError> {
-        if assignment.signature.name.is_static() && assignment.value.is_static() {
+        if assignment.signature.name.is_static() && assignment.value.is_dynamic() {
             return Err(CompilerError::from((assignment.position, "can't assign a dynamic value to a static variable")));
         }
 

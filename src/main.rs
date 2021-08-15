@@ -13,10 +13,11 @@ mod errors;
 fn main() {
     let input =
     r##"
-        def $hello() {
-            /say hello world
+        def hello(content) {
+            /say #{contentt}
         }
-        hello();
+
+        hello(1);
     "##;
 
     let result = compile(input);
