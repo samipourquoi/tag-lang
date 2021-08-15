@@ -11,8 +11,10 @@ mod errors;
 
 fn main() {
     let input =
-    r##"hello := 16;
-        /say #{hello}
+    r##"
+        def $hello($world) {
+            /say #{$world}
+        }
     "##;
     let result = parser::parse(input).finish();
 
@@ -22,6 +24,7 @@ fn main() {
     } else if
         let Err(err) = result
     {
-        println!("{:?}", err);
+        // println!("{:?}", err);
+        err.format(input);
     }
 }

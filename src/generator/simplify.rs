@@ -21,11 +21,11 @@ impl Simplify<String> for Expression {
 impl Simplify<i32> for Expression {
     fn simplify<'a>(&self, ctx: &'a Generator) -> Result<i32, &'a str> {
         match self {
-            Expression::Sum(summand, expr) => 
+            Expression::Sum(summand, expr, _) =>
                 Ok(<Summand as Simplify<i32>>::simplify(summand, ctx)? +
                     <Expression as Simplify<i32>>::simplify(expr, ctx)?),
-            Expression::Summand(summand) => summand.simplify(ctx),
-            Expression::Boolean(_) => Err("can't resolve a boolean into an i32")
+            Expression::Summand(summand, _) => summand.simplify(ctx),
+            Expression::Boolean(_, _) => Err("can't resolve a boolean into an i32")
         }
     }
 }
@@ -57,8 +57,8 @@ impl Simplify<i32> for Term {
 impl Simplify<bool> for Expression {
     fn simplify<'a>(&self, ctx: &'a Generator) -> Result<bool, &'a str> {
         match self {
-            Expression::Boolean(bl) => Ok(*bl),
-            Expression::Summand(summand) => summand.simplify(ctx),
+            Expression::Boolean(bl, _) => Ok(*bl),
+            Expression::Summand(summand, _) => summand.simplify(ctx),
             _ => Err("can't resolve to a boolean")
         }
     }

@@ -10,4 +10,4 @@ edition = "2018"
 nom = "6"
 nom-greedyerror = "0.3.1"
 nom_locate = "3.0.2"
-
+termion = "1.5.6"

@@ -14,10 +14,10 @@ impl Generator {
         }
 
         match expr {
-            Expression::Boolean(bl) => {
+            Expression::Boolean(bl, _) => {
                 self.write(format!("data modify storage tag:runtime stack append value {}", bl));
             },
-            Expression::Sum(summand, expr) => {
+            Expression::Sum(summand, expr, _) => {
                 self.generate_summand(summand);
                 self.generate_expression(*expr);
                 self.write("execute store score %a __tag__ run data get storage tag:runtime stack[-1]");
@@ -28,7 +28,7 @@ impl Generator {
                 self.write("scoreboard players operation %a __tag__ += %b __tag__");
                 self.write("execute store storage tag:runtime stack[-1] int run scoreboard players get %a __tag__");
             },
-            Expression::Summand(summand) => self.generate_summand(summand),
+            Expression::Summand(summand, _) => self.generate_summand(summand),
             _ => todo!()
         }
     }

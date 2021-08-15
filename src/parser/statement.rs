@@ -26,6 +26,7 @@ use nom_locate::position;
 use nom_greedyerror::{GreedyErrorKind, GreedyError};
 use nom::error::{make_error, ErrorKind};
 use crate::errors::CompilerError;
+use crate::parser::expression;
 
 #[derive(Debug, Clone)]
 pub enum Statement {
@@ -149,9 +150,13 @@ pub fn parse_command(input: Span) -> ParseResult<Command> {
     )(input)?;
     let (input, end) = read_line(input)?;
 
-    if start.iter().any(|(_, expr)| expr.is_dynamic()) {
-        return Err(CompilerError::fail(input, "can't interpolate a dynamic value in a command"));
+    for (_, expr) in &start {
+        if expr.is_dynamic() {
+            return Err(CompilerError::fail(expr.pos().clone(),
+                                           "can't interpolate a dynamic value in a command"));
+        }
     }
+
 
     let start: Vec<(String, Expression)> = start.into_iter()
         .map(|(a, b)| (a.fragment().to_string(), b))

@@ -16,9 +16,9 @@ pub trait IsStatic {
 impl IsStatic for Expression {
     fn is_static(&self) -> bool {
         match self {
-            Expression::Sum(summand, expr) => summand.is_static() && expr.is_static(),
-            Expression::Summand(summand) => summand.is_static(),
-            Expression::Boolean(_) => true
+            Expression::Sum(summand, expr, _) => summand.is_static() && expr.is_static(),
+            Expression::Summand(summand, _) => summand.is_static(),
+            Expression::Boolean(_, _) => true
         }
     }
 }

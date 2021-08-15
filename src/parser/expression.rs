@@ -1,4 +1,4 @@
-use crate::parser::{Span, err_msg};
+use crate::parser::{Span, err_msg, Position};
 use crate::parser::function::parse_function_call;
 use crate::parser::function::FunctionCall;
 use nom::branch::alt;
@@ -9,12 +9,23 @@ use nom::bytes::complete::tag;
 use nom::character::complete::digit1;
 use crate::parser::typing::parse_typing;
 use nom::Parser;
+use nom_locate::position;
 
 #[derive(Debug, Clone)]
 pub enum Expression {
-    Sum(Summand, Box<Expression>),
-    Summand(Summand),
-    Boolean(bool)
+    Sum(Summand, Box<Expression>, Position),
+    Summand(Summand, Position),
+    Boolean(bool, Position)
+}
+
+impl Expression {
+    pub fn pos(&self) -> &Position {
+        match self {
+            Expression::Sum(_, _, pos) => pos,
+            Expression::Summand(_, pos) => pos,
+            Expression::Boolean(_, pos) => pos
+        }
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -47,14 +58,17 @@ impl VariableName {
 }
 
 pub(in super) fn parse_expression(input: Span) -> ParseResult<Expression> {
+    let (_, pos) = position(input)?;
     err_msg("invalid expression", alt((
-        map(tag("true"), |_| Expression::Boolean(true)),
-        map(tag("false"), |_| Expression::Boolean(false)),
+        map(tag("true"), move |_| Expression::Boolean(true, pos.into())),
+        map(tag("false"), move |_| Expression::Boolean(false, pos.into())),
 
         map(separated_pair(parse_summand, ws(tag("+")), parse_expression),
-            |(summand, expression)| Expression::Sum(summand, Box::new(expression))),
+            move |(summand, expression)|
+                Expression::Sum(summand, Box::new(expression), pos.into())),
 
-        map(parse_summand, |summand| Expression::Summand(summand)),
+        map(parse_summand, move |summand|
+            Expression::Summand(summand, pos.into())),
     )))(input)
 }
 
