@@ -20,10 +20,26 @@ impl Generator {
     pub fn generate_statements(&mut self, statements: Vec<Statement>) -> Result<(), CompilerError> {
         // first we analyze the statements
         // (e.g. we register the functions)
-        for statement in &statements {
-            if let Statement::FunctionDeclaration(func) = statement {
-                let name = self.generate_function(func.clone())?;
-                self.register_function(func.clone(), name);
+
+        let functions: Vec<_> = statements.iter().filter_map(|statement| {
+            match statement {
+                Statement::FunctionDeclaration(func) => Some(func.clone()),
+                _ => None
+            }
+        }).collect();
+
+        for func in &functions {
+            if func.is_dynamic() && func.signature.get_static_args().is_empty() {
+                let name = self.push_file();
+                self.register_function(func.clone(), Some(name));
+            } else {
+                self.register_function(func.clone(), None);
+            }
+        }
+
+        for func in functions.iter().rev() {
+            if func.is_dynamic() && func.signature.get_static_args().is_empty() {
+                self.generate_function(func.clone());
             }
         }
 
@@ -51,7 +67,7 @@ impl Generator {
         if assignment.is_dynamic() {
             self.register_runtime_variable(&assignment.signature);
             self.generate_expression(assignment.value)?;
-            self.write(format!("data modify storage tag:runtime vars[-1].\"{}\" set from storage tag:runtime stack[-1]",
+            self.write(format!("data modify storage tag:runtime vars[-1].\"{}\" set from storage tag:runtime stack[-1].@",
                                assignment.signature.name.get_name()));
             self.generate_pop_expression();
         } else {

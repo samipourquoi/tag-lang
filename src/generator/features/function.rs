@@ -8,29 +8,27 @@ use crate::generator::staticness::IsStatic;
 use crate::errors::CompilerError;
 
 impl Generator {
-    pub fn generate_function(&mut self, function: Function) -> Result<Option<String>, CompilerError> {
-        if function.is_dynamic() && function.signature.get_static_args().is_empty() {
-            let name = self.push_file();
-            let requires_scope = Self::requires_scope(&function.block);
-            if requires_scope { self.push_scope(); }
+    pub fn generate_function(&mut self, function: Function) -> Result<(), CompilerError> {
+        assert!(function.is_dynamic() && function.signature.get_static_args().is_empty());
 
-            for sign in &function.signature.get_dynamic_args() {
-                self.register_runtime_variable(sign);
-                self.write(format!(
-                    "data modify storage tag:runtime vars[-1].\"{}\" append value from storage tag:runtime stack[-1]",
-                    sign.name.get_name()
-                ));
-                self.generate_pop_expression();
-            }
+        let requires_scope = Self::requires_scope(&function.block)
+            || !function.signature.get_dynamic_args().is_empty();
+        if requires_scope { self.push_scope(); }
 
-            self.generate_statements(function.block)?;
-            if requires_scope { self.pop_scope(); }
-            self.pop_file();
-
-            return Ok(Some(name));
+        for sign in &function.signature.get_dynamic_args() {
+            self.register_runtime_variable(sign);
+            self.write(format!(
+                "data modify storage tag:runtime vars[-1].\"{}\" set from storage tag:runtime stack[-1].@",
+                sign.name.get_name()
+            ));
+            self.generate_pop_expression();
         }
 
-        Ok(None)
+        self.generate_statements(function.block)?;
+        if requires_scope { self.pop_scope(); }
+        self.pop_file();
+
+        Ok(())
     }
 
     pub fn generate_function_call(&mut self, function_call: FunctionCall) -> Result<(), CompilerError> {
@@ -49,10 +47,12 @@ impl Generator {
             }
 
             if func.is_static() {
+                // Macros
                 self.push_static_scope();
                 self.generate_statements(func.block.clone())?;
                 self.pop_static_scope();
-            } else if func.is_dynamic() && !static_args.is_empty() {
+            } else if func.is_dynamic() && !func.signature.get_static_args().is_empty() {
+                // Dynamic macros
                 for (_, expr) in &dyn_args {
                     self.generate_expression(expr.clone())?;
                 }
@@ -62,10 +62,10 @@ impl Generator {
 
                 if requires_scope { self.push_scope(); }
 
-                for (sign, _) in &dyn_args {
+                for (sign, _) in dyn_args.iter().rev() {
                     self.register_runtime_variable(sign);
                     self.write(format!(
-                        "data modify storage tag:runtime vars[-1].\"{}\" append value from storage tag:runtime stack[-1]",
+                        "data modify storage tag:runtime vars[-1].\"{}\" set from storage tag:runtime stack[-1].@",
                         sign.name.get_name()
                     ));
                     self.generate_pop_expression();
@@ -77,12 +77,15 @@ impl Generator {
                 if requires_scope { self.pop_scope(); }
                 self.pop_file();
 
-                self.write(format!("function tag:{}", name))
-            } else if func.is_dynamic() && static_args.is_empty() {
-                for (_, expr) in &dyn_args {
+                self.write(format!("function {}:{}", self.namespace, name))
+            } else if func.is_dynamic() && func.signature.get_static_args().is_empty() {
+                // Functions
+                for (_, expr) in dyn_args.iter().rev() {
                     self.generate_expression(expr.clone())?;
                 }
-                self.write(format!("function tag:{}", file_name.unwrap()))
+                self.write(format!("function {}:{}", self.namespace, file_name.unwrap()))
+            } else {
+                return panic!("can't resolve function call");
             }
 
             Ok(())

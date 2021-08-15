@@ -10,23 +10,23 @@ impl Generator {
     pub fn generate_expression(&mut self, expr: Expression) -> Result<(), CompilerError> {
         if expr.is_static() {
             let value: String = expr.to_string(self)?;
-            self.write(format!("data modify storage tag:runtime stack append value {}", value));
+            self.generate_push_to_stack(value);
             return Ok(());
         }
 
         match expr {
             Expression::Boolean(bl, _) => {
-                self.write(format!("data modify storage tag:runtime stack append value {}", bl));
+                self.generate_push_to_stack(bl);
             },
             Expression::Sum(summand, expr, _) => {
                 self.generate_summand(summand)?;
                 self.generate_expression(*expr)?;
-                self.write("execute store result score %a __tag__ run data get storage tag:runtime stack[-1]");
-                self.write("execute store result score %b __tag__ run data get storage tag:runtime stack[-2]");
+                self.write("execute store result score %a __tag__ run data get storage tag:runtime stack[-1].@");
+                self.write("execute store result score %b __tag__ run data get storage tag:runtime stack[-2].@");
 
                 self.generate_pop_expression();
 
-                self.write("execute store result storage tag:runtime stack[-1] int 1 run scoreboard players operation %a __tag__ *= %b __tag__");
+                self.write("execute store result storage tag:runtime stack[-1].@ int 1 run scoreboard players operation %a __tag__ *= %b __tag__");
             },
             Expression::Summand(summand, _) => self.generate_summand(summand)?,
             _ => todo!()
@@ -40,12 +40,12 @@ impl Generator {
             Summand::Multiplication(term, summand) => {
                 self.generate_term(term)?;
                 self.generate_summand(*summand)?;
-                self.write("execute result store score %a __tag__ run data get storage tag:runtime stack[-1]");
-                self.write("execute result store score %b __tag__ run data get storage tag:runtime stack[-2]");
+                self.write("execute result store score %a __tag__ run data get storage tag:runtime stack[-1].@");
+                self.write("execute result store score %b __tag__ run data get storage tag:runtime stack[-2].@");
 
                 self.generate_pop_expression();
 
-                self.write("execute store result storage tag:runtime stack[-1] int 1 run scoreboard players operation %a __tag__ *= %b __tag__");
+                self.write("execute store result storage tag:runtime stack[-1].@ int 1 run scoreboard players operation %a __tag__ *= %b __tag__");
 
                 Ok(())
             },
@@ -55,8 +55,7 @@ impl Generator {
 
     pub fn generate_term(&mut self, term: Term) -> Result<(), CompilerError> {
         match term {
-            Term::Number(n) => 
-                self.write(format!("data modify storage tag:runtime stack append value {}", n)),
+            Term::Number(n) => self.generate_push_to_stack(n),
             Term::Expression(expr) => self.generate_expression(*expr)?,
             Term::FunctionCall(_call) => unimplemented!(),
             Term::Variable(var) => {
@@ -70,12 +69,11 @@ impl Generator {
                 //         <Expression as Simplify<String>>::simplify(&value, self).unwrap()));
                 // } else {
                     let path = self.get_variable_nbt_path(&var);
-                    self.write(format!("data modify storage tag:runtime stack append from storage tag:runtime {}", path))
+                    self.write("data modify storage tag:runtime stack append value {}");
+                    self.write(format!("data modify storage tag:runtime stack[-1].@ set from storage tag:runtime {}", path))
                 // }
             },
-            Term::String(str) => {
-                self.write(format!("data modify storage tag:runtime stack append value \"{}\"", str))
-            }
+            Term::String(str) => self.generate_push_to_stack(str)
         };
 
         Ok(())

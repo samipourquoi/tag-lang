@@ -5,21 +5,34 @@ pub mod typing;
 
 use nom_locate::LocatedSpan;
 use nom::error::ErrorKind;
-use nom::combinator::all_consuming;
+use nom::combinator::{all_consuming, verify};
 use nom::{IResult, Offset};
-use nom::multi::many0;
+use nom::multi::{many0, many1};
 use nom::sequence::{delimited, terminated};
 use nom::bytes::complete::tag;
-use nom::character::complete::{not_line_ending, line_ending as eol, multispace0, alpha1, alphanumeric0};
+use nom::character::complete::{not_line_ending, line_ending as eol, multispace0, alpha1, alphanumeric0, one_of, anychar};
 use nom::error::ParseError;
 use crate::parser::statement::{Statement, parse_statement};
 use nom_greedyerror::GreedyError;
 use crate::errors::CompilerError;
 use nom::Err;
+use std::ops::Add;
+use nom::branch::alt;
+use nom::character::is_alphanumeric;
 
 #[derive(Debug)]
 pub struct AST {
     pub statements: Vec<Statement>
+}
+
+impl Add for AST {
+    type Output = Self;
+
+    fn add(self, other: AST) -> Self::Output {
+        AST {
+            statements: vec![self.statements, other.statements].concat()
+        }
+    }
 }
 
 pub type Span<'a> = LocatedSpan<&'a str>;
@@ -63,13 +76,12 @@ pub fn parse(input: &str) -> ParseResult<AST> {
 fn identifier(input: Span) -> ParseResult<String> {
     err_msg("invalid identifier", |input| {
         let (input, first) = alpha1(input)?;
-        let (input, second) = alphanumeric0(input)?;
-        let (input, third) = many0(tag("'"))(input)?;
-        let third: Vec<_> = third.iter()
-            .map(|s: &Span| *s.fragment())
-            .collect();
+        let (input, second) = many0(alt((
+            one_of("_'"),
+            verify(anychar, |char| is_alphanumeric(*char as u8))
+        )))(input)?;
 
-        Ok((input, first.to_string() + &second.to_string() + &third.join("")))
+        Ok((input, first.fragment().to_string() + second.iter().collect::<String>().as_str()))
     })(input)
 }
 

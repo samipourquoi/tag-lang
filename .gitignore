@@ -1,5 +1,6 @@
 # dev
 examples/0-dev.tag
+examples/*/*
 
 # build
 target
