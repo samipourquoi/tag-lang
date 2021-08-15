@@ -1,7 +1,7 @@
-use crate::parser::Span;
+use crate::parser::{Span, err_msg};
 use crate::parser::{ParseResult, ws};
 use nom::branch::alt;
-use nom::combinator::{map, opt, map_res, success};
+use nom::combinator::{map, opt, map_res, success, cut};
 use nom::bytes::complete::tag;
 use nom::sequence::preceded;
 
@@ -14,10 +14,10 @@ pub enum Typing {
 }
 
 pub(in super) fn parse_typing(input: Span) -> ParseResult<Typing> {
-    alt((
+    err_msg("invalid type", alt((
         map(tag("int"), |_| Typing::Integer),
         map(tag("string"), |_| Typing::String),
-    ))(input)
+    )))(input)
 }
 
 pub(in super) fn parse_declaration_typing(input: Span) -> ParseResult<Typing> {

@@ -14,13 +14,15 @@ use nom::character::complete::{not_line_ending, line_ending as eol, multispace0,
 use nom::error::ParseError;
 use crate::parser::statement::{Statement, parse_statement};
 use nom_greedyerror::GreedyError;
+use crate::errors::CompilerError;
+use nom::Err;
 
 #[derive(Debug)]
 pub struct AST {
     pub statements: Vec<Statement>
 }
 
-type Span<'a> = LocatedSpan<&'a str>;
+pub type Span<'a> = LocatedSpan<&'a str>;
 
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub struct Position {
@@ -41,7 +43,7 @@ impl From<Span<'_>> for Position {
     }
 }
 
-type ParseResult<'a, T> = IResult<Span<'a>, T, GreedyError<Span<'a>, ErrorKind>>;
+type ParseResult<'a, T> = IResult<Span<'a>, T, CompilerError>;
 
 pub fn parse(input: &str) -> ParseResult<AST> {
     let input = Span::new(input);
@@ -53,14 +55,16 @@ pub fn parse(input: &str) -> ParseResult<AST> {
 }
 
 fn identifier(input: Span) -> ParseResult<String> {
-    let (input, first) = alpha1(input)?;
-    let (input, second) = alphanumeric0(input)?;
-    let (input, third) = many0(tag("'"))(input)?;
-    let third: Vec<_> = third.iter()
-        .map(|s: &Span| *s.fragment())
-        .collect();
+    err_msg("invalid identifier", |input| {
+        let (input, first) = alpha1(input)?;
+        let (input, second) = alphanumeric0(input)?;
+        let (input, third) = many0(tag("'"))(input)?;
+        let third: Vec<_> = third.iter()
+            .map(|s: &Span| *s.fragment())
+            .collect();
 
-    Ok((input, first.to_string() + &second.to_string() + &third.join("")))
+        Ok((input, first.to_string() + &second.to_string() + &third.join("")))
+    })(input)
 }
 
 fn read_line(input: Span) -> ParseResult<String> {
@@ -77,12 +81,26 @@ fn end_of_line(input: Span) -> ParseResult<Span> {
 }
 
 fn ws<'a, T, F>(inner: F) -> impl FnMut(Span<'a>) -> ParseResult<T>
-    where
-        F: Fn(Span<'a>) -> ParseResult<T>
+    where F: Fn(Span<'a>) -> ParseResult<T>
 {
     delimited(
         multispace0,
         inner,
         multispace0
     )
+}
+
+pub fn err_msg<'a, S, T, F>(msg: S, mut parser: F)
+    -> impl FnMut(Span<'a>) -> ParseResult<T>
+    where S: ToString,
+          F: FnMut(Span<'a>) -> ParseResult<T>
+{
+    move |input| {
+        parser(input).map_err(|err|
+           err.map(|comp_err| CompilerError {
+               error: msg.to_string(),
+               position: comp_err.position
+           })
+        )
+    }
 }

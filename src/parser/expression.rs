@@ -1,4 +1,4 @@
-use crate::parser::Span;
+use crate::parser::{Span, err_msg};
 use crate::parser::function::parse_function_call;
 use crate::parser::function::FunctionCall;
 use nom::branch::alt;
@@ -47,15 +47,15 @@ impl VariableName {
 }
 
 pub(in super) fn parse_expression(input: Span) -> ParseResult<Expression> {
-    alt((
+    err_msg("invalid expression", alt((
+        map(tag("true"), |_| Expression::Boolean(true)),
+        map(tag("false"), |_| Expression::Boolean(false)),
+
         map(separated_pair(parse_summand, ws(tag("+")), parse_expression),
             |(summand, expression)| Expression::Sum(summand, Box::new(expression))),
 
         map(parse_summand, |summand| Expression::Summand(summand)),
-
-        map(tag("true"), |_| Expression::Boolean(true)),
-        map(tag("false"), |_| Expression::Boolean(false)),
-    ))(input)
+    )))(input)
 }
 
 pub(in super) fn parse_summand(input: Span) -> ParseResult<Summand> {
@@ -73,8 +73,8 @@ pub(in super) fn parse_summand(input: Span) -> ParseResult<Summand> {
 
 pub(in super) fn parse_term(input: Span) -> ParseResult<Term> {
     alt((
-        // map(digit1,
-            // |d: Span| Term::Number(d.fragment().to_string().parse().unwrap())),
+        map(digit1,
+            |d: Span| Term::Number(d.fragment().to_string().parse().unwrap())),
 
         map(parse_function_call, |call| Term::FunctionCall(call)),
 

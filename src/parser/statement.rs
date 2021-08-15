@@ -1,8 +1,8 @@
-use crate::parser::Span;
+use crate::parser::{Span, Position};
 use crate::parser::function::parse_function_call;
 use crate::parser::function::FunctionCall;
 use nom::bytes::complete::take_until;
-use nom::combinator::into;
+use nom::combinator::{into, cut};
 use nom::multi::many1;
 use nom::character::is_newline;
 use nom::combinator::verify;
@@ -22,6 +22,10 @@ use crate::parser::typing::{Typing, parse_declaration_typing};
 use std::iter::FromIterator;
 use crate::generator::staticness::IsStatic;
 use nom::character::complete::alphanumeric0;
+use nom_locate::position;
+use nom_greedyerror::{GreedyErrorKind, GreedyError};
+use nom::error::{make_error, ErrorKind};
+use crate::errors::CompilerError;
 
 #[derive(Debug, Clone)]
 pub enum Statement {
@@ -43,7 +47,8 @@ pub struct IfStatement {
 #[derive(Debug, Clone)]
 pub struct Command {
     pub start: Vec<(String, Expression)>,
-    pub end: String
+    pub end: String,
+    pub position: Position
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -131,6 +136,7 @@ pub(in super) fn parse_if_statement(input: Span) -> ParseResult<IfStatement> {
 }
 
 pub fn parse_command(input: Span) -> ParseResult<Command> {
+    let (input, position) = position(input)?;
     let (input, _) = tag("/")(input)?;
     let (input, start) = many0(
         pair(
@@ -138,20 +144,20 @@ pub fn parse_command(input: Span) -> ParseResult<Command> {
                 take_until("#{"),
                 |string: &Span| string.fragment().chars().all(|c| !is_newline(c as u8))
             ),
-            delimited(tag("#{"), ws(parse_expression), tag("}"))
+            delimited(tag("#{"), cut(ws(parse_expression)), tag("}"))
         )
     )(input)?;
     let (input, end) = read_line(input)?;
 
     if start.iter().any(|(_, expr)| expr.is_dynamic()) {
-        panic!("can't interpolate a dynamic value in a command");
+        return Err(CompilerError::fail(input, "can't interpolate a dynamic value in a command"));
     }
 
     let start: Vec<(String, Expression)> = start.into_iter()
         .map(|(a, b)| (a.fragment().to_string(), b))
         .collect();
 
-    Ok((input, Command { start, end }))
+    Ok((input, Command { start, end, position: position.into() }))
 }
 
 pub(in super) fn parse_variable_declaration(input: Span)
