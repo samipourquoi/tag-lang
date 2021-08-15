@@ -9,8 +9,7 @@ use crate::errors::CompilerError;
 impl Generator {
     pub fn generate_expression(&mut self, expr: Expression) -> Result<(), CompilerError> {
         if expr.is_static() {
-            let value: String = expr.simplify(self)
-                .map_err(|error| CompilerError { position: expr.pos().clone(), error: error.to_string() })?;
+            let value: String = expr.to_string(self)?;
             self.write(format!("data modify storage tag:runtime stack append value {}", value));
             return Ok(());
         }
@@ -75,6 +74,9 @@ impl Generator {
                     let path = self.get_variable_nbt_path(&var);
                     self.write(format!("data modify storage tag:runtime stack append from storage tag:runtime {}", path))
                 // }
+            },
+            Term::String(str) => {
+                self.write(format!("data modify storage tag:runtime stack append value \"{}\"", str))
             }
         };
 

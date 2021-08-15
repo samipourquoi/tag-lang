@@ -5,11 +5,12 @@ use nom::branch::alt;
 use nom::combinator::{map, opt};
 use nom::sequence::{separated_pair, delimited};
 use crate::parser::{ws, ParseResult, identifier};
-use nom::bytes::complete::tag;
-use nom::character::complete::digit1;
+use nom::bytes::complete::{tag, take_until};
+use nom::character::complete::{digit1, alphanumeric0, one_of, char};
 use crate::parser::typing::parse_typing;
 use nom::Parser;
 use nom_locate::position;
+use nom::bytes::complete::escaped;
 
 #[derive(Debug, Clone)]
 pub enum Expression {
@@ -37,6 +38,7 @@ pub enum Summand {
 #[derive(Debug, Clone)]
 pub enum Term {
     Number(i32),
+    String(String),
     FunctionCall(FunctionCall),
     Variable(VariableName),
     Expression(Box<Expression>)
@@ -87,6 +89,11 @@ pub(in super) fn parse_summand(input: Span) -> ParseResult<Summand> {
 
 pub(in super) fn parse_term(input: Span) -> ParseResult<Term> {
     alt((
+        map(delimited(tag("\""),
+            take_until("\""),
+            tag("\"")),
+            |str: Span| Term::String(str.fragment().to_string())),
+
         map(digit1,
             |d: Span| Term::Number(d.fragment().to_string().parse().unwrap())),
 

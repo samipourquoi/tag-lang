@@ -38,7 +38,8 @@ impl IsStatic for Term {
             Term::Number(_) => true,
             Term::Expression(expr) => expr.is_static(),
             Term::FunctionCall(call) => call.is_static(),
-            Term::Variable(var) => var.is_static()
+            Term::Variable(var) => var.is_static(),
+            Term::String(_) => true
         }
     }
 }

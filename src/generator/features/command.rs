@@ -7,10 +7,7 @@ impl Generator {
     pub fn generate_command(&mut self, cmd: Command) -> Result<(), CompilerError> {
         let mut start: Vec<String> = vec![];
         for (string, expr) in cmd.start.clone() {
-            let to_string: String = expr.simplify(&self).map_err(|err| CompilerError {
-                error: err.to_string(),
-                position: expr.pos().clone()
-            })?;
+            let to_string: String = expr.to_string(&self)?;
             start.push(string + to_string.as_str());
         }
 
