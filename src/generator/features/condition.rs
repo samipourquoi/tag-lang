@@ -7,9 +7,7 @@ impl Generator {
         self.generate_expression(if_stmt.expr)?;
 
         let fn_name = self.push_file();
-        self.push_scope();
-        self.generate_statements(if_stmt.block)?;
-        self.pop_scope();
+        self.generate_scoped_statements(if_stmt.block)?;
         self.pop_file();
 
         self.write(format!("execute if data storage tag:runtime stack[-1] run function tag:{}", fn_name));
@@ -21,7 +19,7 @@ impl Generator {
             self.write(format!("execute unless data storage tag:runtime stack[-1] run function tag:{}", name));
         } else if let Some(else_block) = if_stmt.else_block {
             let name = self.push_file();
-            self.generate_statements(else_block)?;
+            self.generate_scoped_statements(else_block)?;
             self.pop_file();
             self.write(format!("execute unless data storage tag:runtime stack[-1] run function tag:{}", name));
         }

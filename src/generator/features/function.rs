@@ -11,7 +11,8 @@ impl Generator {
     pub fn generate_function(&mut self, function: Function) -> Result<Option<String>, CompilerError> {
         if function.is_dynamic() && function.signature.get_static_args().is_empty() {
             let name = self.push_file();
-            self.push_scope();
+            let requires_scope = Self::requires_scope(&function.block);
+            if requires_scope { self.push_scope(); }
 
             for sign in &function.signature.get_dynamic_args() {
                 self.register_runtime_variable(sign);
@@ -23,7 +24,7 @@ impl Generator {
             }
 
             self.generate_statements(function.block)?;
-            self.pop_scope();
+            if requires_scope { self.pop_scope(); }
             self.pop_file();
 
             return Ok(Some(name));
@@ -56,7 +57,10 @@ impl Generator {
                     self.generate_expression(expr.clone())?;
                 }
 
-                self.push_scope();
+                let statements = func.block.clone();
+                let requires_scope = Self::requires_scope(&statements);
+
+                if requires_scope { self.push_scope(); }
 
                 for (sign, _) in &dyn_args {
                     self.register_runtime_variable(sign);
@@ -69,8 +73,8 @@ impl Generator {
 
                 let name = self.push_file();
 
-                self.generate_statements(func.block.clone())?;
-                self.pop_scope();
+                self.generate_statements(statements)?;
+                if requires_scope { self.pop_scope(); }
                 self.pop_file();
 
                 self.write(format!("function tag:{}", name))

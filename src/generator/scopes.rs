@@ -1,5 +1,5 @@
 use crate::parser::function::FunctionCall;
-use crate::parser::statement::Statement;
+use crate::parser::statement::{Statement, IfStatement};
 use crate::parser::statement::VariableSignature;
 use std::collections::HashSet;
 use crate::parser::function::FunctionSignature;
@@ -129,5 +129,20 @@ impl Generator {
 
         candidates.iter().max_by(|(_, score1), (_, score2)| score1.cmp(score2))
             .map(|candidate| candidate.0)
+    }
+
+    pub fn requires_scope(statements: &Vec<Statement>) -> bool {
+        fn if_statement_requires_scope(r#if: &IfStatement) -> bool {
+            Generator::requires_scope(&r#if.block)
+                || Generator::requires_scope(r#if.else_block.as_ref().unwrap_or(&vec![]))
+                || (*r#if.else_if).as_ref().map_or(false, |r#if| if_statement_requires_scope(r#if))
+        }
+
+        statements.iter().any(|statement| match statement {
+            Statement::IfStatement(r#if) => if_statement_requires_scope(r#if),
+            Statement::VariableAssignment(_) => true,
+            Statement::FunctionDeclaration(_) => true,
+            _ => false
+        })
     }
 }

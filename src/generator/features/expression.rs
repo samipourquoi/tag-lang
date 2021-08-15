@@ -21,13 +21,12 @@ impl Generator {
             Expression::Sum(summand, expr, _) => {
                 self.generate_summand(summand)?;
                 self.generate_expression(*expr)?;
-                self.write("execute store score %a __tag__ run data get storage tag:runtime stack[-1]");
-                self.write("execute store score %b __tag__ run data get storage tag:runtime stack[-2]");
+                self.write("execute store result score %a __tag__ run data get storage tag:runtime stack[-1]");
+                self.write("execute store result score %b __tag__ run data get storage tag:runtime stack[-2]");
 
                 self.generate_pop_expression();
 
-                self.write("scoreboard players operation %a __tag__ += %b __tag__");
-                self.write("execute store storage tag:runtime stack[-1] int run scoreboard players get %a __tag__");
+                self.write("execute store result storage tag:runtime stack[-1] int 1 run scoreboard players operation %a __tag__ *= %b __tag__");
             },
             Expression::Summand(summand, _) => self.generate_summand(summand)?,
             _ => todo!()
@@ -41,13 +40,12 @@ impl Generator {
             Summand::Multiplication(term, summand) => {
                 self.generate_term(term)?;
                 self.generate_summand(*summand)?;
-                self.write("execute store score %a __tag__ run data get storage tag:runtime stack[-1]");
-                self.write("execute store score %b __tag__ run data get storage tag:runtime stack[-2]");
+                self.write("execute result store score %a __tag__ run data get storage tag:runtime stack[-1]");
+                self.write("execute result store score %b __tag__ run data get storage tag:runtime stack[-2]");
 
                 self.generate_pop_expression();
 
-                self.write("scoreboard players operation %a __tag__ *= %b __tag__");
-                self.write("execute store storage tag:runtime stack[-1] int run scoreboard players get %a __tag__");
+                self.write("execute store result storage tag:runtime stack[-1] int 1 run scoreboard players operation %a __tag__ *= %b __tag__");
 
                 Ok(())
             },

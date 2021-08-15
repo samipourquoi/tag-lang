@@ -5,6 +5,18 @@ use crate::generator::scopes;
 use crate::errors::CompilerError;
 
 impl Generator {
+    pub fn generate_scoped_statements(&mut self, statements: Vec<Statement>) -> Result<(), CompilerError> {
+        if Self::requires_scope(&statements) {
+            self.push_scope();
+            self.generate_statements(statements)?;
+            self.pop_scope();
+        } else {
+            self.generate_statements(statements)?;
+        }
+
+        Ok(())
+    }
+
     pub fn generate_statements(&mut self, statements: Vec<Statement>) -> Result<(), CompilerError> {
         // first we analyze the statements
         // (e.g. we register the functions)

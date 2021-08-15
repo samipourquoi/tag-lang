@@ -53,9 +53,7 @@ impl Generator {
 pub fn generate(ast: AST) -> Result<(), CompilerError> {
     let mut ctx = Generator::new();
 
-    ctx.push_scope();
-    ctx.generate_statements(ast.statements)?;
-    ctx.pop_scope();
+    ctx.generate_scoped_statements(ast.statements)?;
 
     dbg!(ctx);
     Ok(())
