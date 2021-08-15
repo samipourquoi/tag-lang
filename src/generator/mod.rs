@@ -6,6 +6,7 @@ pub mod staticness;
 
 use super::parser::{AST};
 use std::collections::HashMap;
+use crate::errors::CompilerError;
 
 #[derive(Debug)]
 pub struct Generator {
@@ -49,12 +50,13 @@ impl Generator {
     }
 }
 
-pub fn generate(ast: AST) {
+pub fn generate(ast: AST) -> Result<(), CompilerError> {
     let mut ctx = Generator::new();
 
     ctx.push_scope();
-    ctx.generate_statements(ast.statements);
+    ctx.generate_statements(ast.statements)?;
     ctx.pop_scope();
 
     dbg!(ctx);
+    Ok(())
 }

@@ -43,6 +43,12 @@ impl From<Span<'_>> for Position {
     }
 }
 
+impl Default for Position {
+    fn default() -> Self {
+        Position { offset: 0, length: 0, line: 0, column: 0 }
+    }
+}
+
 type ParseResult<'a, T> = IResult<Span<'a>, T, CompilerError>;
 
 pub fn parse(input: &str) -> ParseResult<AST> {

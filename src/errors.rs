@@ -48,15 +48,17 @@ impl CompilerError {
 
         let mut out: Vec<String> = vec![];
         for i in lines_nb {
-            out.push(format!("{}{: >margin$} |{} {}",
-                    Fg(color::Red), i, Fg(color::Reset),
-                    lines[(i - 1) as usize],
-                    margin = margin));
+            out.push(format!(
+                "{}{: >margin$} |{} {}",
+                Fg(color::Red), i, Fg(color::Reset),
+                lines[(i - 1) as usize],
+                margin = margin));
 
             if i == self.position.line as i32 {
-                out.push(format!("{}{: >margin$} ){}{: >column$}{}{}",
-                                 Fg(color::Red), " ", Fg(color::LightRed), "^", "here", style::Reset,
-                                 margin = margin, column = self.position.column))
+                out.push(format!(
+                    "{}{: >margin$} ){}{: >column$}{}{}",
+                    Fg(color::Red), " ", Fg(color::LightRed), "^", "here", style::Reset,
+                    margin = margin, column = self.position.column + 1))
             }
         }
         out.push(format!("{}{}error{}: {}",

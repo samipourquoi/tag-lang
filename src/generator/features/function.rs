@@ -5,9 +5,10 @@ use crate::parser::function::FunctionCall;
 use crate::parser::function::Function;
 use crate::generator::Generator;
 use crate::generator::staticness::IsStatic;
+use crate::errors::CompilerError;
 
 impl Generator {
-    pub fn generate_function(&mut self, function: Function) -> Option<String> {
+    pub fn generate_function(&mut self, function: Function) -> Result<Option<String>, CompilerError> {
         if function.is_dynamic() && function.signature.get_static_args().is_empty() {
             let name = self.push_file();
             self.push_scope();
@@ -21,17 +22,17 @@ impl Generator {
                 self.generate_pop_expression();
             }
 
-            self.generate_statements(function.block);
+            self.generate_statements(function.block)?;
             self.pop_scope();
             self.pop_file();
 
-            return Some(name);
+            return Ok(Some(name));
         }
 
-        None
+        Ok(None)
     }
 
-    pub fn generate_function_call(&mut self, function_call: FunctionCall) {
+    pub fn generate_function_call(&mut self, function_call: FunctionCall) -> Result<(), CompilerError> {
         if let Some(info) = self.resolve_function_call(&function_call) {
             let (func, file_name) = info.clone();
             let args: Vec<_> = func.signature.args.iter().zip(function_call.args).collect();
@@ -41,17 +42,18 @@ impl Generator {
             for (sign, expr) in &static_args {
                 self.assign_static_variable(VariableAssignment {
                     signature: sign.clone().clone(),
-                    value: expr.clone()
-                });
+                    value: expr.clone(),
+                    position: Default::default()
+                })?;
             }
 
             if func.is_static() {
                 self.push_static_scope();
-                self.generate_statements(func.block.clone());
+                self.generate_statements(func.block.clone())?;
                 self.pop_static_scope();
             } else if func.is_dynamic() && !static_args.is_empty() {
                 for (_, expr) in &dyn_args {
-                    self.generate_expression(expr.clone());
+                    self.generate_expression(expr.clone())?;
                 }
 
                 self.push_scope();
@@ -67,19 +69,21 @@ impl Generator {
 
                 let name = self.push_file();
 
-                self.generate_statements(func.block.clone());
+                self.generate_statements(func.block.clone())?;
                 self.pop_scope();
                 self.pop_file();
 
                 self.write(format!("function tag:{}", name))
             } else if func.is_dynamic() && static_args.is_empty() {
                 for (_, expr) in &dyn_args {
-                    self.generate_expression(expr.clone());
+                    self.generate_expression(expr.clone())?;
                 }
                 self.write(format!("function tag:{}", file_name.unwrap()))
             }
+
+            Ok(())
         } else {
-            panic!("can't resolve function call");
+            Err((function_call.position, "can't resolve function call").into())
         }
     }
 }

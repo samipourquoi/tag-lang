@@ -61,7 +61,8 @@ pub struct VariableSignature {
 #[derive(Debug, Clone)]
 pub struct VariableAssignment {
     pub signature: VariableSignature,
-    pub value: Expression
+    pub value: Expression,
+    pub position: Position
 }
 
 pub(in super) fn parse_block(input: Span) -> ParseResult<Vec<Statement>> {
@@ -168,11 +169,12 @@ pub fn parse_command(input: Span) -> ParseResult<Command> {
 pub(in super) fn parse_variable_declaration(input: Span)
     -> ParseResult<VariableAssignment>
 {
+    let (_, position) = position(input)?;
     let (input, name) = parse_variable(input)?;
     let (input, typing) = ws(parse_declaration_typing)(input)?;
     let (input, value) = preceded(ws(tag(":=")), parse_expression)(input)?;
 
     Ok((input, VariableAssignment {
-        value, signature: VariableSignature { name, typing }
+        value, signature: VariableSignature { name, typing }, position: position.into()
     }))
 }

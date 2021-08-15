@@ -12,6 +12,7 @@ use crate::generator::staticness::IsStatic;
 use crate::parser::typing::Typing;
 use crate::generator::simplify::Simplify;
 use std::cmp::Ordering;
+use crate::errors::CompilerError;
 
 #[derive(Debug)]
 pub(in super) struct Scope {
@@ -53,8 +54,10 @@ impl Generator {
         scope.runtime_variables.insert(signature.name.clone(), signature.typing.clone());
     }
 
-    pub fn assign_static_variable(&mut self, assignment: VariableAssignment) {
-        assert!(assignment.signature.name.is_static() && assignment.value.is_static());
+    pub fn assign_static_variable(&mut self, assignment: VariableAssignment) -> Result<(), CompilerError> {
+        if assignment.signature.name.is_static() && assignment.value.is_static() {
+            return Err(CompilerError::from((assignment.position, "can't assign a dynamic value to a static variable")));
+        }
 
         // we'll have to resolve static variables here, but we need to do
         // type inference and other things first.
@@ -63,6 +66,8 @@ impl Generator {
 
         let scope = self.peek_scope();
         scope.comptime_variables.insert(assignment.signature.name, assignment.value);
+
+        Ok(())
     }
 
     pub fn get_variable_nbt_path(&self, var: &VariableName) -> String {

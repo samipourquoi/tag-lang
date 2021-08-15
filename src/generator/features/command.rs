@@ -1,9 +1,10 @@
 use crate::generator::Generator;
 use crate::parser::statement::Command;
 use crate::generator::simplify::Simplify;
+use crate::errors::CompilerError;
 
 impl Generator {
-    pub fn generate_command(&mut self, cmd: Command) {
+    pub fn generate_command(&mut self, cmd: Command) -> Result<(), CompilerError> {
         let start: Vec<_> = cmd.start.iter() 
             .cloned()
             .map(|(string, expr)| {
@@ -13,5 +14,7 @@ impl Generator {
             .collect();
         let interpolated = start.join("") + cmd.end.as_str();
         self.write(interpolated);
+
+        Ok(())
     }
 }

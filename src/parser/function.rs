@@ -22,6 +22,7 @@ use crate::parser::ParseResult;
 use crate::generator::staticness::IsStatic;
 use nom::character::complete::{multispace0, multispace1};
 use nom_locate::position;
+use crate::errors::CompilerError;
 
 #[derive(Debug, Clone)]
 pub struct Function {
@@ -39,7 +40,8 @@ pub struct FunctionSignature {
 #[derive(Debug, Clone)]
 pub struct FunctionCall {
     pub name: VariableName,
-    pub args: Vec<Expression>
+    pub args: Vec<Expression>,
+    pub position: Position
 }
 
 pub fn parse_function(input: Span) -> ParseResult<Function> {
@@ -64,17 +66,18 @@ pub fn parse_function(input: Span) -> ParseResult<Function> {
         VariableName::Static(_) if dyn_args.is_empty() && block.is_static() => FunctionSignature {
             name: name.clone(), args
         },
-        _ => panic!("can't use dynamic args in a macro declaration.")
+        _ => return Err(CompilerError::fail(position, "can't use dynamic args in a macro declaration."))
     };
 
     if name.is_static() && block.is_dynamic() {
-        panic!("can't use dynamic statements in a static function");
+        return Err(CompilerError::fail(position, "can't use dynamic statements in a static function"));
     }
 
     Ok((input, Function { signature, block, position: position.into() }))
 }
 
 pub fn parse_function_call(input: Span) -> ParseResult<FunctionCall> {
+    let (_, position) = position(input)?;
     let (input, name) = parse_variable(input)?;
     let (input, args) = delimited(
         ws(tag("(")),
@@ -90,6 +93,6 @@ pub fn parse_function_call(input: Span) -> ParseResult<FunctionCall> {
     }
 
     Ok((input, FunctionCall {
-        name, args
+        name, args, position: position.into()
     }))
 }

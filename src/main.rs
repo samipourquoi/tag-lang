@@ -4,6 +4,7 @@
 use nom_greedyerror::convert_error;
 use nom::Finish;
 use nom::Err::*;
+use crate::errors::CompilerError;
 
 mod parser;
 mod generator;
@@ -12,19 +13,22 @@ mod errors;
 fn main() {
     let input =
     r##"
-        def $hello($world) {
-            /say #{$world}
+        def $hello() {
+            /say hello world
         }
+        hello();
     "##;
-    let result = parser::parse(input).finish();
+
+    let result = compile(input);
 
     if let Ok(result) = result {
-        dbg!(&result);
-        generator::generate(result.1);
-    } else if
-        let Err(err) = result
-    {
-        // println!("{:?}", err);
+    } else if let Err(err) = result {
         err.format(input);
     }
+}
+
+fn compile(input: &str) -> Result<(), CompilerError> {
+    let ast = parser::parse(input).finish()?;
+    dbg!(&ast);
+    generator::generate(ast.1)
 }
