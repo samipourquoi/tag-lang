@@ -31,6 +31,10 @@ impl CompilerError {
         nom::Err::Failure((pos.into(), error).into())
     }
 
+    pub fn syntax_error<P: Into<Position>>(pos: P) -> nom::Err<Self> {
+        CompilerError::fail(pos, "syntax error")
+    }
+
     pub fn format(&self, src: &str) {
         use termion::{color, color::Fg, style};
 

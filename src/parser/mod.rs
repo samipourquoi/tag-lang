@@ -2,11 +2,12 @@ pub mod expression;
 pub mod statement;
 pub mod function;
 pub mod typing;
+mod shunting_yard;
 
 use nom_locate::LocatedSpan;
 use nom::error::ErrorKind;
 use nom::combinator::{all_consuming, verify};
-use nom::{IResult, Offset};
+use nom::{IResult, Offset, Parser};
 use nom::multi::{many0, many1};
 use nom::sequence::{delimited, terminated};
 use nom::bytes::complete::tag;
